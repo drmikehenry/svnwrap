@@ -42,15 +42,13 @@ for i, baseName in enumerate(colorNames):
 
 '''
 
-if platform.system() == 'Windows':
+usingColor = os.isatty(sys.stdout.fileno())
+if usingColor and platform.system() == 'Windows':
     try:
         import colorama
         colorama.init()
-        usingColor = True
     except ImportError, e:
         usingColor = False
-else:
-    usingColor = os.isatty(sys.stdout.fileno())
 
 def setColorNum(colorNum):
     if usingColor:
