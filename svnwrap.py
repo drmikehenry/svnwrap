@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-__VERSION__ = '0.2.7'
+__VERSION__ = '0.2.8'
 
 import sys
 import re
 import os
 import subprocess
 import difflib
+import platform
 import shutil
 
 STATUS_REX = r'^Performing status|^\s*$|^X[ \t]'
@@ -41,7 +42,15 @@ for i, baseName in enumerate(colorNames):
 
 '''
 
-usingColor = os.isatty(sys.stdout.fileno())
+if platform.system() == 'Windows':
+    try:
+        import colorama
+        colorama.init()
+        usingColor = True
+    except ImportError, e:
+        usingColor = False
+else:
+    usingColor = os.isatty(sys.stdout.fileno())
 
 def setColorNum(colorNum):
     if usingColor:
