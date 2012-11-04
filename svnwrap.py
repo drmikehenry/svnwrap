@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__VERSION__ = '0.2.8'
+__VERSION__ = '0.3.0'
 
 import sys
 import re
@@ -145,6 +145,16 @@ def svnGenStatus(statusArgs, modified = False, namesOnly = False):
                 yield name
         else:
             yield line
+
+def svnGenInfo(infoArgs):
+    infoDict = {}
+    for line in svnGenCmd('info', infoArgs):
+        if ":" in line:
+            key, value = line.split(":", 1)
+            infoDict[key.strip()] = value.strip()
+        else:
+            yield infoDict
+            infoDict = {}
 
 def svnGenDiff(args, ignoreSpaceChange=False):
     cmd = ['diff']
@@ -366,6 +376,7 @@ mergeraw RAWPATH [WCPATH]
                 - merge raw (non-SVN) tree into working copy
 ee              - propedit svn:externals
 ei              - propedit svn:ignore
+url             - show URL as received from "svn info"
 helpwrap        - this help
 
 options:
@@ -465,6 +476,10 @@ def main():
         if not args:
             args.append(".")
         svnCall("propedit svn:ignore".split() + args)
+
+    elif cmd == 'url':
+        for infoDict in svnGenInfo(args):
+            writeLn(infoDict["URL"])
 
     elif cmd == '':
         svnCall()
