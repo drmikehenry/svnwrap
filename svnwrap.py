@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__VERSION__ = '0.3.0'
+__VERSION__ = '0.3.2'
 
 import sys
 import re
@@ -361,23 +361,23 @@ svnwrap version ''' + __VERSION__ + ''' providing:
 - Highlighting of status, diff, and other outputs
 - Integration with kdiff3
 
-status (st)     - status output suppressing messages regarding svn:externals
-stnames         - status output trimmed to bare path names
-stmod           - status output for modified files only (all but ?)
-stmodroot       - stmod trimmed to path roots (top-level directories)
-stmodrevert     - reverts modified files (use with caution!)
-update (up)     - update, suppressing messages regarding svn:externals
-switch (sw)     - switch, suppressing messages regarding svn:externals
-checkout (co)   - checkout, suppressing messages regarding svn:externals
-diff, ediff     - highlighted diff output with linewise svn:externals diffing
-bdiff, ebdiff   - like diff but ignoring space changes
-kdiff (kdiff3)  - diff with '--diff-cmd kdiff3'
+status (st, stat) - status output suppressing messages regarding svn:externals
+stnames           - status output trimmed to bare path names
+stmod             - status output for modified files only (all but ?)
+stmodroot         - stmod trimmed to path roots (top-level directories)
+stmodrevert       - reverts modified files (use with caution!)
+update (up)       - update, suppressing messages regarding svn:externals
+switch (sw)       - switch, suppressing messages regarding svn:externals
+checkout (co)     - checkout, suppressing messages regarding svn:externals
+diff, ediff (di)  - highlighted diff output with linewise svn:externals diffing
+bdiff, ebdiff     - like diff but ignoring space changes
+kdiff (kdiff3)    - diff with '--diff-cmd kdiff3'
 mergeraw RAWPATH [WCPATH]
-                - merge raw (non-SVN) tree into working copy
-ee              - propedit svn:externals
-ei              - propedit svn:ignore
-url             - show URL as received from "svn info"
-helpwrap        - this help
+                  - merge raw (non-SVN) tree into working copy
+ee                - propedit svn:externals
+ei                - propedit svn:ignore
+url               - show URL as received from "svn info"
+helpwrap          - this help
 
 options:
   --color on|off|auto       use color in output (defaults to auto)
@@ -419,7 +419,7 @@ def main():
     elif cmd == 'helpwrap':
         helpWrap(args)
 
-    elif cmd == 'st' or cmd == 'status':
+    elif cmd == 'st' or cmd == 'stat' or cmd == 'status':
         writeStatusLines(svnGenStatus(args))
 
     elif cmd == 'stnames':
@@ -446,7 +446,7 @@ def main():
     elif cmd in ['co', 'checkout']:
         writeUpdateLines(svnGenCmd(cmd, args, regex=CHECKOUT_REX))
 
-    elif cmd in ['diff', 'ediff']:
+    elif cmd in ['diff', 'ediff', 'di']:
         writeDiffLines(diffFilter(svnGenDiff(args)))
 
     elif cmd in ['bdiff', 'ebdiff']:
