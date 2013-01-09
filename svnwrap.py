@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+# vim:set fileencoding=utf8: #
 
-__VERSION__ = '0.3.2'
+
+__VERSION__ = '0.4.0'
 
 import sys
 import re
@@ -9,6 +11,53 @@ import subprocess
 import difflib
 import platform
 import shutil
+import ConfigParser
+
+sampleIniContents = """
+[aliases]
+## Create aliases like this:
+## project1 = http://server/url/for/project1
+##
+## Use them by starting URLs with // and the alias name, e.g.:
+## //project1/trunk
+"""
+
+
+class SvnError(Exception):
+    pass
+
+def getEnviron(envVar, default):
+    try:
+        return os.environ[envVar]
+    except KeyError:
+        return default
+
+def getConfigDir():
+    configHome = os.path.join(getEnviron("HOME", ""), ".config")
+    if os.name == "nt":
+        configHome = getEnviron("APPDATA", configHome)
+    configHome = getEnviron("XDG_CONFIG_HOME", configHome)
+    return os.path.join(configHome, "svnwrap")
+
+def svnwrapConfig():
+    configDir = getConfigDir()
+    iniPath = os.path.join(configDir, "config.ini")
+    if not os.path.isdir(configDir):
+        os.makedirs(configDir)
+    if not os.path.isfile(iniPath):
+        with open(iniPath, "w") as f:
+            f.write(sampleIniContents)
+    config = ConfigParser.SafeConfigParser()
+    config.read(iniPath)
+    return config
+
+def getAliases():
+    config = svnwrapConfig()
+    try:
+        aliases = config.items("aliases")
+    except ConfigParser.NoSectionError:
+        aliases = {}
+    return dict(aliases)
 
 STATUS_REX = r'^Performing status|^\s*$|^X[ \t]'
 UPDATE_REX = (r'^Fetching external|^External |^Updated external|^\s*$' +
@@ -89,7 +138,7 @@ def write(s, f=sys.stdout):
     f.write(s)
     f.flush()
 
-def writeLn(line):
+def writeLn(line = ""):
     write(line + '\n')
 
 def writeLines(lines):
@@ -349,6 +398,164 @@ def svnMergeRaw(rawRoot, wcRoot):
                 print 'removing file %r' % rel
                 svnCall(['rm', wcPath])
 
+def getUser():
+    try:
+        return os.environ["USER"]
+    except KeyError:
+        raise SvnError("missing environment variable USER")
+
+def svnUrlSplit(url):
+    m = re.match(r'''
+            (?P<head> .*?)
+            /
+            (?P<middle> trunk | (tags | branches) (/ guests / [^/]+)? / [^/]+)
+            (?P<tail> .*)
+        ''', url, re.MULTILINE | re.VERBOSE)
+    if m:
+        return m.group("head"), m.group("middle"), m.group("tail")
+    else:
+        return url, "", ""
+
+def svnGetUrl(path="."):
+    # If this is already a URL, return it unchanged.
+    if re.match(r'\w+://', path):
+        return path
+    infoDict = list(svnGenInfo([path]))[0]
+    try:
+        return infoDict["URL"]
+    except KeyError:
+        raise SvnError("invalid subversion path %r" % path)
+
+def svnGetUrlHead(url):
+    return svnUrlSplit(svnGetUrl(url))[0]
+
+def svnUrlMap(url):
+    urlHistory = set()
+    aliases = getAliases()
+    while True:
+        m = re.match(r'''
+                    # Alias of the form //alias ...
+                    //(?P<alias>[^/]+) (?P<aliasAfter>.*)
+                | 
+                    # Absolute URL (e.g., https://...) not at start.
+                    .* [:/] (?P<url> \w {2,} :// .*)
+                |
+                    # Keyword at path-component boundary.
+                    (?P<keyBefore> ^ | .*? /)
+
+                    # Avoid single-character drive letters like C:.
+                    (?P<key> \w {2,}) :
+
+                    # After the colon, must not have two slashes.
+                    (?P<keyAfter> .? $ | [^/] .* | / [^/] .*)
+            ''', url, re.MULTILINE | re.VERBOSE)
+
+        if m and m.group("alias"):
+            alias = m.group("alias")
+            after = m.group("aliasAfter")
+            try:
+                url = aliases[alias] + after
+            except KeyError:
+                raise SvnError("undefined alias %r" % alias)
+        elif m and m.group("url"):
+            url = m.group("url")
+        elif m and m.group("key"):
+            before = m.group("keyBefore")
+            key = m.group("key")
+            after = m.group("keyAfter")
+            if before.endswith("/") and before != "/":
+                before = before[:-1]
+            if after and not after.startswith("/"):
+                after = "/" + after
+            if key == "pr":
+                try:
+                    url = os.environ["P"]
+                except KeyError:
+                    raise SvnError("missing environment variable P")
+            elif key == "pp":
+                try:
+                    url = os.environ["PP"]
+                except KeyError:
+                    raise SvnError("missing environment variable PP")
+            elif key == "tr":
+                url = svnGetUrlHead(before) + "/trunk"
+            elif key == "br":
+                url = svnGetUrlHead(before) + "/branches"
+            elif key == "tag":
+                url = svnGetUrlHead(before) + "/tags"
+            elif key == "gb":
+                url = svnGetUrlHead(before) + "/branches/guests"
+            elif key == "gt":
+                url = svnGetUrlHead(before) + "/tags/guests"
+            elif key == "mb":
+                url = svnGetUrlHead(before) + "/branches/guests/" + getUser()
+            elif key == "mt":
+                url = svnGetUrlHead(before) + "/tags/guests/" + getUser()
+            else:
+                raise SvnError("unknown keyword '%s:' in URL" % key)
+
+            url += after
+        else:
+            break
+        if url in urlHistory:
+            raise SvnError("mapping loop for URL %r" % url)
+        urlHistory.add(url)
+
+    return url
+
+subcommands = set("""
+? add ann annotate blame cat changelist checkout ci cl cleanup co commit copy
+cp del delete di diff export h help import info list lock log ls merge
+mergeinfo mkdir move mv patch pd pdel pe pedit pg pget pl plist praise propdel
+propedit propget proplist propset ps pset relocate remove ren rename resolve
+resolved revert rm st stat status sw switch unlock up update upgrade
+""".split())
+
+zeroArgSwitches = set("""
+--allow-mixed-revisions --auto-props --diff --dry-run --force --force-log
+--git --ignore-ancestry --ignore-externals --ignore-keywords
+--ignore-whitespace --incremental --internal-diff --keep-changelists
+--keep-local --no-auth-cache --no-auto-props --no-diff-deleted --no-ignore
+--no-unlock --non-interactive --non-recursive --notice-ancestry --parents
+--quiet --record-only --recursive --reintegrate --relocate --remove
+--reverse-diff --revprop --show-copies-as-adds --show-updates --stop-on-copy
+--strict --strict option to disabl --summarize --trust-server-cert
+--use-merge-history --verbose --with-all-revprops --with-no-revprops --xml -?
+-N -R -g -q -u -v
+""".split())
+
+oneArgSwitches = set("""
+--accept --change --changelist --cl --config-dir --config-option --depth
+--diff-cmd --diff3-cmd --editor-cmd --encoding --extensions --file --limit
+--message --native-eol --new --old --password --revision --set-depth
+--show-revs --strip --targets --username --with-revprop -F -c -l -m -r -x
+""".split())
+
+switchArgCount = {}
+for arg in zeroArgSwitches:
+    switchArgCount[arg] = 0
+for arg in oneArgSwitches:
+    switchArgCount[arg] = 1
+
+def getSwitchArgCount(s):
+    try:
+        return switchArgCount[s]
+    except KeyError:
+        raise SvnError("invalid switch %r" % s)
+
+def urlMapArgs(cmd, posArgs):
+    if cmd in "propset pset ps".split():
+        numUnmappablePosArgs = 2
+    elif cmd in """
+            propdel pdel pd 
+            propedit pedit pe 
+            propget pget pg""".split():
+        numUnmappablePosArgs = 1
+    else:
+        numUnmappablePosArgs = 0
+    return (posArgs[:numUnmappablePosArgs] +
+            [svnUrlMap(arg) for arg in posArgs[numUnmappablePosArgs:]])
+
 def helpWrap(args=[], summary=False):
     if summary:
         write('''
@@ -384,12 +591,19 @@ options:
         
 ''')
 
-def main():
+def parseArgs():
+    """Return (switchArgs, posArgs)."""
+
+    argsToSkip = 0
+    switchArgs = []
+    posArgs = []
     args = sys.argv[1:]
-    cmd = ''
-    while args and not cmd:
+    while args:
         arg = args.pop(0)
-        if arg == '--test':
+        if argsToSkip:
+            argsToSkip -= 1
+            switchArgs.append(arg)
+        elif arg == '--test':
             global SVN
             SVN = './testsvn.py'
         elif arg == '--color':
@@ -405,15 +619,41 @@ def main():
             elif colorFlag != 'auto':
                 helpWrap(summary=True)
                 sys.exit()
+        elif arg.startswith("--"):
+            argsToSkip = getSwitchArgCount(arg)
+            switchArgs.append(arg)
+        elif arg.startswith("-"):
+            if arg == "-":
+                raise SvnError("invalid switch '-'")
+            # Split arg into one-character switches.
+            s = arg[1:]
+            while s:
+                arg = "-" + s[0]
+                s = s[1:]
+                argsToSkip = getSwitchArgCount(arg)
+                if argsToSkip and s:
+                    argsToSkip -= 1
+                    s = ""
+            switchArgs.append(arg)
         else:
-            cmd = arg
+            posArgs.append(arg)
+    return switchArgs, posArgs
 
-    if cmd == 'help' and not args:
-        svnCall(['help'])
+def main():
+    switchArgs, posArgs = parseArgs()
+    if posArgs:
+        cmd = posArgs.pop(0)
+        posArgs = urlMapArgs(cmd, posArgs)
+    else:
+        cmd = None
+    args = switchArgs + posArgs
+
+    if cmd is None:
+        svnCall()
         helpWrap(summary=True)
 
-    elif cmd == '' and not args:
-        svnCall()
+    elif cmd == 'help' and not args:
+        svnCall(['help'])
         helpWrap(summary=True)
 
     elif cmd == 'helpwrap':
@@ -423,21 +663,21 @@ def main():
         writeStatusLines(svnGenStatus(args))
 
     elif cmd == 'stnames':
-        writeLines(svnGenStatus(args, namesOnly = True))
+        writeLines(svnGenStatus(args, namesOnly=True))
 
     elif cmd == 'stmod':
-        writeLines(svnGenStatus(args, modified = True))
+        writeLines(svnGenStatus(args, modified=True))
 
     elif cmd == 'stmodroot':
         d = {}
-        for line in svnGenStatus(args, modified = True):
+        for line in svnGenStatus(args, modified=True):
             line = re.sub(r'/.*', '', line)
             d[line] = 1
         for name in sorted(d):
             writeLn(name)
 
     elif cmd == 'stmodrevert':
-        mods = [line.rstrip() for line in svnGenStatus(args, modified = True)]
+        mods = [line.rstrip() for line in svnGenStatus(args, modified=True)]
         svnRevert(mods)
 
     elif cmd in ['up', 'update', 'sw', 'switch']:
@@ -478,12 +718,21 @@ def main():
         svnCall("propedit svn:ignore".split() + args)
 
     elif cmd == 'url':
-        for infoDict in svnGenInfo(args):
-            writeLn(infoDict["URL"])
+        if posArgs:
+            for arg in posArgs:
+                writeLn(svnGetUrl(arg))
+        else:
+            writeLn(svnGetUrl())
 
-    elif cmd == '':
-        svnCall()
-
+    elif cmd == 'br':
+        if len(posArgs) != 1:
+            raise SvnError("br takes exactly one URL")
+        # Default to branches of current URL, but absolute URL following
+        # will override.
+        branch = svnUrlMap("br:" + posArgs[0])
+        trunk = svnUrlMap(branch + "/tr:")
+        cpArgs = ["cp", trunk, branch] + switchArgs
+        svnCall(cpArgs)
     else:
         svnCall([cmd] + args)
 
@@ -494,4 +743,8 @@ def colorTest():
         writeLn(wrapColor('This is %s' % color, color))
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except SvnError, e:
+        print "svnwrap: %s" % str(e)
+        sys.exit(1)
