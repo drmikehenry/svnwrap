@@ -680,7 +680,7 @@ def main():
         mods = [line.rstrip() for line in svnGenStatus(args, modified=True)]
         svnRevert(mods)
 
-    elif cmd in ['up', 'update', 'sw', 'switch']:
+    elif cmd in ['up', 'update']:
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
     elif cmd in ['co', 'checkout']:
@@ -733,6 +733,25 @@ def main():
         trunk = svnUrlMap(branch + "/tr:")
         cpArgs = ["cp", trunk, branch] + switchArgs
         svnCall(cpArgs)
+
+    elif cmd in ['sw', 'switch']:
+        if posArgs and len(posArgs) <= 2 and "--relocate" not in switchArgs:
+            newUrl = posArgs.pop(0)
+            if posArgs:
+                path = posArgs.pop(0)
+            else:
+                path = "."
+            curUrl = svnGetUrl(path)
+            newHead, newMiddle, newTail = svnUrlSplit(newUrl)
+            curHead, curMiddle, curTail = svnUrlSplit(curUrl)
+            if curTail and (newTail != curTail) and not newUrl.endswith("/."):
+                newUrl += curTail
+                args = switchArgs + [newUrl, path]
+                writeLn("detected URL tail: %s" % curTail)
+                writeLn("adjusted URL: %s" % newUrl)
+                writeLn("(append '/.' to URL to avoid URL adjustment)")
+        writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
+
     else:
         svnCall([cmd] + args)
 
