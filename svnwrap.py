@@ -744,12 +744,20 @@ def main():
             curUrl = svnGetUrl(path)
             newHead, newMiddle, newTail = svnUrlSplit(newUrl)
             curHead, curMiddle, curTail = svnUrlSplit(curUrl)
-            if curTail and (newTail != curTail) and not newUrl.endswith("/."):
-                newUrl += curTail
-                args = switchArgs + [newUrl, path]
-                writeLn("detected URL tail: %s" % curTail)
-                writeLn("adjusted URL: %s" % newUrl)
-                writeLn("(append '/.' to URL to avoid URL adjustment)")
+            if newUrl.endswith("/."):
+                writeLn("Skipping tail detection (URL ends with '/.')")
+            elif curTail:
+                writeLn("Detected current URL tail: %s" %
+                        wrapColor(curTail, "darkgreen"))
+                if newTail == curTail:
+                    writeLn("URL tails match, no adjustment made")
+                else:
+                    newUrl += curTail
+                    args = switchArgs + [newUrl, path]
+                    writeLn("URL adjusted to:")
+                    writeLn("  %s" % wrapColor(newUrl, "darkgreen"))
+                    writeLn("(append %s to URL to avoid adjustment)" %
+                            wrapColor("'/.'", "darkgreen"))
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
     else:
