@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-
-__VERSION__ = '0.4.0'
+__VERSION__ = '0.4.1'
 
 import sys
 import re
@@ -39,7 +38,7 @@ def getConfigDir():
     configHome = getEnviron("XDG_CONFIG_HOME", configHome)
     return os.path.join(configHome, "svnwrap")
 
-def svnwrapConfig():
+def getIniPath():
     configDir = getConfigDir()
     iniPath = os.path.join(configDir, "config.ini")
     if not os.path.isdir(configDir):
@@ -47,8 +46,11 @@ def svnwrapConfig():
     if not os.path.isfile(iniPath):
         with open(iniPath, "w") as f:
             f.write(sampleIniContents)
+    return iniPath
+
+def svnwrapConfig():
     config = ConfigParser.SafeConfigParser()
-    config.read(iniPath)
+    config.read(getIniPath())
     return config
 
 def getAliases():
@@ -562,11 +564,14 @@ def helpWrap(args=[], summary=False):
 Type 'svn helpwrap' for help on svnwrap extensions.
 ''')
     else:
+        iniPath = getIniPath()
+        version = __VERSION__
         write('''\
-svnwrap version ''' + __VERSION__ + ''' providing:
+svnwrap version %(version)s providing:
 - Suppression of noisy status output
 - Highlighting of status, diff, and other outputs
 - Integration with kdiff3
+- URL aliases and mapping
 
 status (st, stat) - status output suppressing messages regarding svn:externals
 stnames           - status output trimmed to bare path names
@@ -586,10 +591,38 @@ ei                - propedit svn:ignore
 url               - show URL as received from "svn info"
 helpwrap          - this help
 
-options:
+Global svnwrap options:
   --color on|off|auto       use color in output (defaults to auto)
-        
-''')
+
+Svnwrap configuration file: %(iniPath)s
+
+"//alias" at start of URL expands as defined in configuration file.  E.g., if:
+      proj = https://server/SomeProject
+  then the following two operations would be identical:
+    svn co //proj/trunk/etc
+    svn co https://server/SomeProject/trunk/etc
+
+"keyword:" mapping for URLs:
+- The keyword (including colon) may be at the URL start or after any "/".
+- URL is composed of _prefix_, keyword, _suffix_
+- _prefix_ + keyword become new _prefix_; _suffix_ (if present) is appended.
+- _head_ means that part of _prefix_ which comes before "trunk", "tags", etc.
+
+Keyword     _prefix_ + keyword becomes:
+-------     -------------------------------------------------------
+
+tr:         _head_/trunk
+br:         _head_/branches
+gb:         _head_/branches/guests
+mb:         _head_/branches/guests/$USER
+tag:        _head_/tags
+gt:         _head_/tags/guests
+mt:         _head_/tags/guests/$USER
+pr:         $P
+pp:         $PP
+
+(Above, P, PP, and USER are environment variables.)
+''' % vars())
 
 def parseArgs():
     """Return (switchArgs, posArgs)."""
