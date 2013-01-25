@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = '0.4.2'
+__VERSION__ = '0.4.3'
 
 import sys
 import re
@@ -515,15 +515,15 @@ resolved revert rm st stat status sw switch unlock up update upgrade
 
 zeroArgSwitches = set("""
 --allow-mixed-revisions --auto-props --diff --dry-run --force --force-log
---git --ignore-ancestry --ignore-externals --ignore-keywords
+--git --help --ignore-ancestry --ignore-externals --ignore-keywords
 --ignore-whitespace --incremental --internal-diff --keep-changelists
 --keep-local --no-auth-cache --no-auto-props --no-diff-deleted --no-ignore
 --no-unlock --non-interactive --non-recursive --notice-ancestry --parents
 --quiet --record-only --recursive --reintegrate --relocate --remove
 --reverse-diff --revprop --show-copies-as-adds --show-updates --stop-on-copy
 --strict --strict option to disabl --summarize --trust-server-cert
---use-merge-history --verbose --with-all-revprops --with-no-revprops --xml -?
--N -R -g -q -u -v
+--use-merge-history --version --verbose --with-all-revprops
+--with-no-revprops --xml -?  -N -R -g -q -u -v
 """.split())
 
 oneArgSwitches = set("""
@@ -682,8 +682,11 @@ def main():
     args = switchArgs + posArgs
 
     if cmd is None:
-        svnCall()
-        helpWrap(summary=True)
+        svnCall(args)
+        if "--version" in switchArgs:
+            writeLn("svnwrap version %s" % __VERSION__)
+        else:
+            helpWrap(summary=True)
 
     elif cmd == 'help' and not args:
         svnCall(['help'])
