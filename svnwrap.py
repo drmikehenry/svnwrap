@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = '0.4.3'
+__VERSION__ = '0.4.4'
 
 import sys
 import re
@@ -673,6 +673,8 @@ def parseArgs():
     return switchArgs, posArgs
 
 def main():
+    # Ensure config file exists.
+    svnwrapConfig()
     switchArgs, posArgs = parseArgs()
     if posArgs:
         cmd = posArgs.pop(0)
