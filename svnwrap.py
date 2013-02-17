@@ -93,6 +93,63 @@ for i, baseName in enumerate(colorNames):
 
 '''
 
+colorScheme = {
+        'diffAdd': ['darkblue', None],
+        'diffRemoved': ['lightred', None],
+        'diffMisc': ['darkyellow', None],
+        'conflict': ['lightwhite', 'darkred'],
+        'statusAdded': ['darkgreen', None],
+        'statusDeleted': ['darkred', None],
+        'statusUpdated': ['darkblue', None],
+        'statusConflict': ['lightwhite', 'darkred'],
+        'statusModified': ['darkblue', None],
+        'statusMerged': ['darkmagenta', None],
+        'statusUntracked': ['lightblack', None],
+        'status': ['lightblack', None],
+        'info': ['darkgreen', None],
+}
+
+entryNameToStyleName = {}
+for key in colorScheme:
+    entryNameToStyleName[key.lower()] = key
+
+def readColorScheme():
+    config = svnwrapConfig()
+    try:
+        configuredColors = dict(config.items('colors'))
+    except ConfigParser.NoSectionError:
+        configuredColors = {}
+
+    validKeys = set(colorScheme.keys())
+    for key, value in configuredColors.items():
+        key = entryNameToStyleName.get(key, key)
+
+        if key not in validKeys:
+            continue
+        colors = map(lambda x: x.strip() or 'default', value.split(','))
+        if len(colors) == 1:
+            foreground, background = colors[0], None
+        elif len(colors) == 2:
+            foreground, background = colors
+        else:
+            raise SvnError(
+                    "Invalid number of colors specified for '%s' in config" % (
+                        key,))
+
+        if foreground == 'default':
+            foreground = colorScheme[key][0]
+        if background == 'default':
+            background = colorScheme[key][1]
+
+        if foreground is not None and foreground not in colorDict:
+            raise SvnError("Invalid color ('%s') specified for '%s'" % (
+                foreground, key))
+        if background is not None and background not in colorDict:
+            raise SvnError("Invalid color ('%s') specified for '%s'" % (
+                background, key))
+
+        colorScheme[key] = [foreground, background]
+
 usingColor = os.isatty(sys.stdout.fileno())
 if usingColor and platform.system() == 'Windows':
     try:
@@ -130,9 +187,10 @@ def setBackground(background):
 def resetColors():
     return setColorNum(0)
 
-def wrapColor(s, foreground, background=None):
-    return (setForeground(foreground) + 
-            setBackground(background) + 
+def wrapColor(s, style):
+    foreground, background = colorScheme[style]
+    return (setForeground(foreground) +
+            setBackground(background) +
             s +
             resetColors())
 
@@ -176,9 +234,9 @@ def addConflictLine(line):
 def displayConflicts():
     if conflictingLines:
         writeLn(wrapColor("Total conflicts: %d" % len(conflictingLines),
-            'lightwhite', 'darkred'))
+            'statusConflict'))
         for line in conflictingLines:
-            writeLn(wrapColor(line, 'lightwhite', 'darkred'))
+            writeLn(wrapColor(line, 'statusConflict'))
 
 def splitStatus(statusLine):
     path = statusLine[7:]
@@ -217,12 +275,12 @@ def wrapDiffLines(gen):
     for line in gen:
         c = line[:1]
         if c == '+':
-            line = wrapColor(line, 'darkblue')
+            line = wrapColor(line, 'diffAdd')
             #line = wrapColor(line, 'darkgreen')
         elif c == '-':
-            line = wrapColor(line, 'lightred')
+            line = wrapColor(line, 'diffRemoved')
         elif c == '@':
-            line = wrapColor(line, 'darkyellow')
+            line = wrapColor(line, 'diffMisc')
         yield line
 
 def writeDiffLines(gen):
@@ -235,23 +293,22 @@ def wrapStatusLines(gen):
         if (line.startswith('Checked out') or
                 line.startswith('Updated to revision') or
                 line.startswith('At revision')):
-            line = wrapColor(line, 'lightblack')
+            line = wrapColor(line, 'status')
         elif c == 'A':
-            line = wrapColor(line, 'darkgreen')
-            #line = wrapColor(line, 'darkcyan')
+            line = wrapColor(line, 'statusAdded')
         elif c == 'D':
-            line = wrapColor(line, 'darkred')
+            line = wrapColor(line, 'statusDeleted')
         elif c == 'U':
-            line = wrapColor(line, 'darkblue')
+            line = wrapColor(line, 'statusUpdated')
         elif c == 'C':
             addConflictLine(line)
-            line = wrapColor(line, 'lightwhite', 'darkred')
+            line = wrapColor(line, 'statusConflict')
         elif c == 'M':
-            line = wrapColor(line, 'darkblue')
+            line = wrapColor(line, 'statusModified')
         elif c == 'G':
-            line = wrapColor(line, 'darkmagenta')
+            line = wrapColor(line, 'statusMerged')
         elif c == '?':
-            line = wrapColor(line, 'lightblack')
+            line = wrapColor(line, 'statusUntracked')
         yield line
 
 def writeStatusLines(gen):
@@ -675,6 +732,8 @@ def parseArgs():
 def main():
     # Ensure config file exists.
     svnwrapConfig()
+    readColorScheme()
+
     switchArgs, posArgs = parseArgs()
     if posArgs:
         cmd = posArgs.pop(0)
@@ -786,7 +845,7 @@ def main():
                 writeLn("Skipping tail detection (URL ends with '/.')")
             elif curTail:
                 writeLn("Detected current URL tail: %s" %
-                        wrapColor(curTail, "darkgreen"))
+                        wrapColor(curTail, "info"))
                 if newTail == curTail:
                     writeLn("URL tails match, no adjustment made")
                 else:
@@ -795,7 +854,7 @@ def main():
                     writeLn("URL adjusted to:")
                     writeLn("  %s" % wrapColor(newUrl, "darkgreen"))
                     writeLn("(append %s to URL to avoid adjustment)" %
-                            wrapColor("'/.'", "darkgreen"))
+                            wrapColor("'/.'", "info"))
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
     else:
