@@ -803,13 +803,16 @@ def main():
 
     displayConflicts()
 
-def colorTest():
-    for color in sorted(colorDict):
-        writeLn(wrapColor('This is %s' % color, color))
-
-if __name__ == '__main__':
+def mainWithSvnErrorHandling():
     try:
         main()
     except SvnError, e:
         print "svnwrap: %s" % str(e)
         sys.exit(1)
+
+def colorTest():
+    for color in sorted(colorDict):
+        writeLn(wrapColor('This is %s' % color, color))
+
+if __name__ == '__main__':
+    mainWithSvnErrorHandling()
