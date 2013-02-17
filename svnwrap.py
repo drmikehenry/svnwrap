@@ -109,6 +109,47 @@ colorScheme = {
         'info': ['darkgreen', None],
 }
 
+entryNameToStyleName = {}
+for key in colorScheme:
+    entryNameToStyleName[key.lower()] = key
+
+def readColorScheme():
+    config = svnwrapConfig()
+    try:
+        configuredColors = dict(config.items('colors'))
+    except ConfigParser.NoSectionError:
+        configuredColors = {}
+
+    validKeys = set(colorScheme.keys())
+    for key, value in configuredColors.items():
+        key = entryNameToStyleName.get(key, key)
+
+        if key not in validKeys:
+            continue
+        colors = map(lambda x: x.strip() or 'default', value.split(','))
+        if len(colors) == 1:
+            foreground, background = colors[0], None
+        elif len(colors) == 2:
+            foreground, background = colors
+        else:
+            raise SvnError(
+                    "Invalid number of colors specified for '%s' in config" % (
+                        key,))
+
+        if foreground == 'default':
+            foreground = colorScheme[key][0]
+        if background == 'default':
+            background = colorScheme[key][1]
+
+        if foreground is not None and foreground not in colorDict:
+            raise SvnError("Invalid color ('%s') specified for '%s'" % (
+                foreground, key))
+        if background is not None and background not in colorDict:
+            raise SvnError("Invalid color ('%s') specified for '%s'" % (
+                background, key))
+
+        colorScheme[key] = [foreground, background]
+
 usingColor = os.isatty(sys.stdout.fileno())
 if usingColor and platform.system() == 'Windows':
     try:
@@ -691,6 +732,8 @@ def parseArgs():
 def main():
     # Ensure config file exists.
     svnwrapConfig()
+    readColorScheme()
+
     switchArgs, posArgs = parseArgs()
     if posArgs:
         cmd = posArgs.pop(0)
