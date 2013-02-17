@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = '0.4.5'
+__VERSION__ = '0.4.6'
 
 import sys
 import re
@@ -485,6 +485,8 @@ def svnUrlMap(url):
                 url = svnGetUrlHead(before) + "/branches"
             elif key == "tag":
                 url = svnGetUrlHead(before) + "/tags"
+            elif key == "rel":
+                url = svnGetUrlHead(before) + "/tags/release"
             elif key == "gb":
                 url = svnGetUrlHead(before) + "/branches/guests"
             elif key == "gt":
@@ -618,6 +620,7 @@ mb:         _head_/branches/guests/$USER
 tag:        _head_/tags
 gt:         _head_/tags/guests
 mt:         _head_/tags/guests/$USER
+rel:        _head_/tags/release
 pr:         $P
 pp:         $PP
 
