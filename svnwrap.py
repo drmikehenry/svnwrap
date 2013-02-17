@@ -25,10 +25,12 @@ sampleIniContents = """
 class SvnError(Exception):
     pass
 
-def getEnviron(envVar, default):
+def getEnviron(envVar, default=None):
     try:
         return os.environ[envVar]
     except KeyError:
+        if default is None:
+            raise SvnError("missing environment variable %s" % envVar)
         return default
 
 def getConfigDir():
@@ -458,10 +460,7 @@ def svnMergeRaw(rawRoot, wcRoot):
                 svnCall(['rm', wcPath])
 
 def getUser():
-    try:
-        return os.environ["USER"]
-    except KeyError:
-        raise SvnError("missing environment variable USER")
+    return getEnviron("USER")
 
 def svnUrlSplit(url):
     m = re.match(r'''
@@ -527,15 +526,9 @@ def svnUrlMap(url):
             if after and not after.startswith("/"):
                 after = "/" + after
             if key == "pr":
-                try:
-                    url = os.environ["P"]
-                except KeyError:
-                    raise SvnError("missing environment variable P")
+                url = getEnviron("P")
             elif key == "pp":
-                try:
-                    url = os.environ["PP"]
-                except KeyError:
-                    raise SvnError("missing environment variable PP")
+                url = getEnviron("PP")
             elif key == "tr":
                 url = svnGetUrlHead(before) + "/trunk"
             elif key == "br":
