@@ -478,10 +478,11 @@ def svnGetUrl(path="."):
     # If this is already a URL, return it unchanged.
     if re.match(r'\w+://', path):
         return path
-    infoDict = list(svnGenInfo([path]))[0]
+    infoDictList = list(svnGenInfo([path]))
     try:
+        infoDict = infoDictList[0]
         return infoDict["URL"]
-    except KeyError:
+    except IndexError, KeyError:
         raise SvnError("invalid subversion path %r" % path)
 
 def svnGetUrlHead(url):
