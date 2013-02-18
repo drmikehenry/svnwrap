@@ -534,7 +534,9 @@ def svnUrlMap(url):
             after = m.group("keyAfter")
             if before.endswith("/") and before != "/":
                 before = before[:-1]
-            if after and not after.startswith("/"):
+            # Add "/" after "keyword:", but only if what follows is non-empty,
+            # does not have a leading slash, and is not a peg revision.
+            if after and after[0] not in "/@":
                 after = "/" + after
             if key == "pr":
                 url = getEnviron("P")
