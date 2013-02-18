@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = '0.4.6'
+__VERSION__ = '0.5.0'
 
 import sys
 import re
@@ -507,9 +507,12 @@ def svnUrlSplitTail(url):
     head, middle, tail = svnUrlSplit(url)
     return tail
 
+def isUrl(path):
+    return re.match(r'\w+://', path) is not None
+
 def svnGetUrl(path="."):
     # If this is already a URL, return it unchanged.
-    if re.match(r'\w+://', path):
+    if isUrl(path):
         return path
     infoDictList = list(svnGenInfo([path]))
     try:
@@ -899,6 +902,15 @@ def main():
                 wcPath = "."
             newUrl = adjustUrlForWcPath(url, wcPath)
             args = switchArgs + [newUrl, wcPath]
+        writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
+
+    elif cmd == "merge":
+        if len(posArgs) > 1 and not isUrl(posArgs[-1]):
+            wcPath = popArgs.pop()
+        else:
+            wcPath = "."
+        urls = [adjustUrlForWcPath(url, wcPath) for url in posArgs]
+        args = switchArgs + urls + [wcPath]
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
     else:
