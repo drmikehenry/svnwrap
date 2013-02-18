@@ -471,6 +471,14 @@ def svnMergeRaw(rawRoot, wcRoot):
 def getUser():
     return getEnviron("USER")
 
+def svnUrlSplitPeg(url):
+    m = re.match(r'(.*)(@\d+)$', url)
+    if m:
+        newUrl, peg = m.group(1), m.group(2)
+    else:
+        newUrl, peg = url, ""
+    return newUrl, peg
+
 def svnUrlSplit(url):
     m = re.match(r'''
             (?P<head> .*?)
@@ -646,14 +654,14 @@ def urlMapArgs(cmd, posArgs):
 
 def adjustUrlForWcPath(url, wcPath):
     newUrl = url
-    # @bug peg revision handling here.
-    if url.endswith("/."):
+    urlBase, urlPeg = svnUrlSplitPeg(url)
+    if urlBase.endswith("/."):
         writeLn("Skipping adjustment for URL ending with '/.':")
         writeLn("  %s" % wrapColor(url, "info"))
     else:
         wcTail = svnGetUrlTail(wcPath)
-        urlHead, urlMiddle, urlTail = svnUrlSplit(url)
-        newUrl = svnUrlJoin(urlHead, urlMiddle, wcTail)
+        urlHead, urlMiddle, urlTail = svnUrlSplit(urlBase)
+        newUrl = svnUrlJoin(urlHead, urlMiddle, wcTail) + urlPeg
         if newUrl != url:
             writeLn("Adjusting URL to match working copy tail:")
             writeLn("  Was: %s" % wrapColor(url, "info"))
