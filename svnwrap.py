@@ -792,7 +792,7 @@ def main():
 
     elif cmd == 'mergeraw':
         if not args or len(args) > 2:
-            write("mergeraw RAWPATH [WCPATH]")
+            writeLn("mergeraw RAWPATH [WCPATH]")
             sys.exit(1)
         rawRoot = args.pop(0)
         if args:
