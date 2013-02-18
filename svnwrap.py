@@ -21,6 +21,15 @@ sampleIniContents = """
 ## //project1/trunk
 """
 
+# True when debugging.
+debugging = False
+
+def debug(s):
+    if debugging:
+        sys.stdout.write(s)
+
+def debugLn(s=""):
+    debug(s + "\n")
 
 class SvnError(Exception):
     pass
@@ -489,6 +498,7 @@ def svnGetUrlHead(url):
     return svnUrlSplit(svnGetUrl(url))[0]
 
 def svnUrlMap(url):
+    debugLn("mapping %s" % repr(url))
     urlHistory = set()
     aliases = getAliases()
     while True:
@@ -555,7 +565,9 @@ def svnUrlMap(url):
         if url in urlHistory:
             raise SvnError("mapping loop for URL %r" % url)
         urlHistory.add(url)
+        debugLn("        %s" % repr(url))
 
+    debugLn("    ==> %s" % repr(url))
     return url
 
 subcommands = set("""
@@ -690,6 +702,9 @@ def parseArgs():
         if argsToSkip:
             argsToSkip -= 1
             switchArgs.append(arg)
+        elif arg == '--debug':
+            global debugging
+            debugging = True
         elif arg == '--test':
             global SVN
             SVN = './testsvn.py'
