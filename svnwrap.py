@@ -483,6 +483,22 @@ def svnUrlSplit(url):
     else:
         return url, "", ""
 
+def svnUrlJoin(head, middle, tail):
+    url = head
+    if middle:
+        url += "/" + middle
+    if tail:
+        url += tail
+    return url
+
+def svnUrlSplitHead(url):
+    head, middle, tail = svnUrlSplit(url)
+    return head
+
+def svnUrlSplitTail(url):
+    head, middle, tail = svnUrlSplit(url)
+    return tail
+
 def svnGetUrl(path="."):
     # If this is already a URL, return it unchanged.
     if re.match(r'\w+://', path):
@@ -495,7 +511,10 @@ def svnGetUrl(path="."):
         raise SvnError("invalid subversion path %r" % path)
 
 def svnGetUrlHead(url):
-    return svnUrlSplit(svnGetUrl(url))[0]
+    return svnUrlSplitHead(svnGetUrl(url))
+
+def svnGetUrlTail(url):
+    return svnUrlSplitTail(svnGetUrl(url))
 
 def svnUrlMap(url):
     debugLn("mapping %s" % repr(url))
@@ -624,6 +643,24 @@ def urlMapArgs(cmd, posArgs):
         numUnmappablePosArgs = 0
     return (posArgs[:numUnmappablePosArgs] +
             [svnUrlMap(arg) for arg in posArgs[numUnmappablePosArgs:]])
+
+def adjustUrlForWcPath(url, wcPath):
+    newUrl = url
+    # @bug peg revision handling here.
+    if url.endswith("/."):
+        writeLn("Skipping adjustment for URL ending with '/.':")
+        writeLn("  %s" % wrapColor(url, "info"))
+    else:
+        wcTail = svnGetUrlTail(wcPath)
+        urlHead, urlMiddle, urlTail = svnUrlSplit(url)
+        newUrl = svnUrlJoin(urlHead, urlMiddle, wcTail)
+        if newUrl != url:
+            writeLn("Adjusting URL to match working copy tail:")
+            writeLn("  Was: %s" % wrapColor(url, "info"))
+            writeLn("  Now: %s" % wrapColor(newUrl, "info"))
+            writeLn("  (append %s to URL to avoid adjustment)" %
+                    wrapColor("'/.'", "info"))
+    return newUrl
 
 def helpWrap(args=[], summary=False):
     if summary:
@@ -846,29 +883,14 @@ def main():
         svnCall(cpArgs)
 
     elif cmd in ['sw', 'switch']:
-        if posArgs and len(posArgs) <= 2 and "--relocate" not in switchArgs:
-            newUrl = posArgs.pop(0)
+        if 1 <= len(posArgs) <= 2 and "--relocate" not in switchArgs:
+            url = posArgs.pop(0)
             if posArgs:
-                path = posArgs.pop(0)
+                wcPath = posArgs.pop(0)
             else:
-                path = "."
-            curUrl = svnGetUrl(path)
-            newHead, newMiddle, newTail = svnUrlSplit(newUrl)
-            curHead, curMiddle, curTail = svnUrlSplit(curUrl)
-            if newUrl.endswith("/."):
-                writeLn("Skipping tail detection (URL ends with '/.')")
-            elif curTail:
-                writeLn("Detected current URL tail: %s" %
-                        wrapColor(curTail, "info"))
-                if newTail == curTail:
-                    writeLn("URL tails match, no adjustment made")
-                else:
-                    newUrl += curTail
-                    args = switchArgs + [newUrl, path]
-                    writeLn("URL adjusted to:")
-                    writeLn("  %s" % wrapColor(newUrl, "darkgreen"))
-                    writeLn("(append %s to URL to avoid adjustment)" %
-                            wrapColor("'/.'", "info"))
+                wcPath = "."
+            newUrl = adjustUrlForWcPath(url, wcPath)
+            args = switchArgs + [newUrl, wcPath]
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
     else:
