@@ -16,11 +16,14 @@ platformIsWindows = platform.system() == "Windows"
 
 sampleIniContents = """
 [aliases]
-## Create aliases like this:
-## project1 = http://server/url/for/project1
+## Aliases are used at the start of a URL.  They are replaced by their
+## aliased value.  When the alias "project1" has been defined, this URL:
+##   //project1
+## will be replaced by the associated URL, e.g.:
+##   http://server/url/for/project1
 ##
-## Use them by starting URLs with // and the alias name, e.g.:
-## //project1/trunk
+## Define aliases as follows:
+## project1 = http://server/url/for/project1
 """
 
 # True when debugging.
@@ -695,24 +698,26 @@ Type 'svn helpwrap' for help on svnwrap extensions.
     else:
         svnwrapIniPath = getSvnwrapIniPath()
         version = __VERSION__
-        write("""\
+        writeLn("""
 svnwrap version %(version)s providing:
 - Suppression of noisy status output
 - Highlighting of status, diff, and other outputs
 - Integration with kdiff3
 - URL aliases and mapping
+- URL adjustment to infer the "tail" of a URL from context (see below).
 
-status (st, stat) - status output suppressing messages regarding svn:externals
-stnames           - status output trimmed to bare path names
-stmod             - status output for modified files only (all but ?)
+status (st, stat) - show status (prettied output)
+stnames           - show status trimmed to bare path names
+stmod             - show status for modified files only (all but ?)
 stmodroot         - stmod trimmed to path roots (top-level directories)
-stmodrevert       - reverts modified files (use with caution!)
-update (up)       - update, suppressing messages regarding svn:externals
-switch (sw)       - switch, suppressing messages regarding svn:externals
-checkout (co)     - checkout, suppressing messages regarding svn:externals
+stmodrevert       - revert modified files (use with caution!)
+update (up)       - update (prettied output)
+switch (sw)       - switch (prettied output) with url adjustment
+merge             - merge  (prettied output) with url adjustment
+checkout (co)     - checkout (prettied output)
 diff, ediff (di)  - highlighted diff output with linewise svn:externals diffing
 bdiff, ebdiff     - like diff but ignoring space changes
-kdiff (kdiff3)    - diff with '--diff-cmd kdiff3'
+kdiff (kdiff3)    - diff with '--diff-cmd kdiff3' (consider 'meld .' instead)
 mergeraw RAWPATH [WCPATH]
                   - merge raw (non-SVN) tree into working copy
 ee                - propedit svn:externals
@@ -752,7 +757,18 @@ pr:         $P
 pp:         $PP
 
 (Above, P, PP, and USER are environment variables.)
-""" % vars())
+
+"URL adjustment" is the ability to infer the "tail" of a URL from context.  For
+example, in a working copy checked out from http://server/repo/trunk/comp, the
+"tail" portion "comp" will be inferred and need not be supplied for certain
+commands, such that the following would be equivalent:
+  svn switch ^/branches/somebranch/comp
+  svn switch ^/branches/somebranch
+
+If your editor isn't launching correctly, setup SVN_EDITOR.
+For more details, see the README.rst file distributed with svnwrap.
+
+""".strip() % vars())
 
 def parseArgs():
     """Return (switchArgs, posArgs)."""
