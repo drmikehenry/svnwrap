@@ -806,7 +806,36 @@ def parseArgs():
             posArgs.append(arg)
     return switchArgs, posArgs
 
+def setupSvnEditor():
+    """Set SVN_EDITOR to "svnwrap exectty " + original editor settings."""
+
+    config = subversionConfig()
+    editor = "vi"
+    editor = getEnviron("EDITOR", default=editor)
+    editor = getEnviron("VISUAL", default=editor)
+    try:
+        editor = config.get("helpers", "editor-cmd")
+    except ConfigParser.Error:
+        pass
+    editor = getEnviron("SVN_EDITOR", default=editor)
+    os.environ["SVN_EDITOR"] = sys.argv[0] + " exectty " + editor
+
 def main():
+    # Arguments to "exectty" are unrelated to svnwrap arguments, so
+    # handle this subcommand specially.
+    args = sys.argv[1:]
+    if args and args[0] == "exectty":
+        cmd = args.pop(0)
+        if cmd == "exectty":
+            if not args:
+                raise SvnError("Missing arguments for exectty")
+
+            # Force stdout to be the same as stderr, then exec args.
+            os.dup2(2, 1)
+            os.execvp(args[0], args)
+
+    setupSvnEditor()
+
     # Ensure config file exists.
     svnwrapConfig()
     readColorScheme()
