@@ -302,7 +302,6 @@ def wrapDiffLines(gen):
         c = line[:1]
         if c == "+":
             line = wrapColor(line, "diffAdd")
-            #line = wrapColor(line, "darkgreen")
         elif c == "-":
             line = wrapColor(line, "diffRemoved")
         elif c == "@":
