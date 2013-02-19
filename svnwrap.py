@@ -237,9 +237,7 @@ def svnCall(args = []):
     subprocess.call([SVN] + args)
 
 def svnGen(args, regex = None):
-    svn = subprocess.Popen([SVN] + args, 
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT)
+    svn = subprocess.Popen([SVN] + args, stdout=subprocess.PIPE)
     while 1:
         line = svn.stdout.readline()
         if line:
