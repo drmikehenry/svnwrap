@@ -44,15 +44,15 @@ def getEnviron(envVar, default=None):
             raise SvnError("missing environment variable %s" % envVar)
         return default
 
-def getConfigDir():
+def getSvnwrapConfigDir():
     configHome = os.path.join(getEnviron("HOME", ""), ".config")
     if platformIsWindows:
         configHome = getEnviron("APPDATA", configHome)
     configHome = getEnviron("XDG_CONFIG_HOME", configHome)
     return os.path.join(configHome, "svnwrap")
 
-def getIniPath():
-    configDir = getConfigDir()
+def getSvnwrapIniPath():
+    configDir = getSvnwrapConfigDir()
     iniPath = os.path.join(configDir, "config.ini")
     if not os.path.isdir(configDir):
         os.makedirs(configDir)
@@ -63,7 +63,7 @@ def getIniPath():
 
 def svnwrapConfig():
     config = ConfigParser.SafeConfigParser()
-    config.read(getIniPath())
+    config.read(getSvnwrapIniPath())
     return config
 
 def getAliases():
@@ -73,6 +73,21 @@ def getAliases():
     except ConfigParser.NoSectionError:
         aliases = {}
     return dict(aliases)
+
+def getSubversionConfigDir():
+    if platformIsWindows:
+        configDir = os.path.join(getEnviron("APPDATA", ""), "Subversion")
+    else:
+        configDir = os.path.join(getEnviron("HOME", ""), ".subversion")
+    return configDir
+
+def getSubversionIniPath():
+    return os.path.join(getSubversionConfigDir(), "config")
+
+def subversionConfig():
+    config = ConfigParser.SafeConfigParser()
+    config.read(getSubversionIniPath())
+    return config
 
 STATUS_REX = r'^Performing status|^\s*$|^X[ \t]'
 UPDATE_REX = (r'^Fetching external|^External |^Updated external|^\s*$' +
@@ -681,7 +696,7 @@ def helpWrap(args=[], summary=False):
 Type 'svn helpwrap' for help on svnwrap extensions.
 ''')
     else:
-        iniPath = getIniPath()
+        svnwrapIniPath = getSvnwrapIniPath()
         version = __VERSION__
         write('''\
 svnwrap version %(version)s providing:
@@ -711,7 +726,7 @@ helpwrap          - this help
 Global svnwrap options:
   --color on|off|auto       use color in output (defaults to auto)
 
-Svnwrap configuration file: %(iniPath)s
+Svnwrap configuration file: %(svnwrapIniPath)s
 
 "//alias" at start of URL expands as defined in configuration file.  E.g., if:
       proj = https://server/SomeProject
