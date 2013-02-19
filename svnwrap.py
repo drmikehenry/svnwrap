@@ -164,7 +164,7 @@ def readColorScheme():
             foreground, background = colors
         else:
             raise SvnError(
-                    "Invalid number of colors specified for '%s' in config" % (
+                    "invalid number of colors specified for '%s' in config" % (
                         key,))
 
         if foreground == "default":
@@ -173,10 +173,10 @@ def readColorScheme():
             background = colorScheme[key][1]
 
         if foreground is not None and foreground not in colorDict:
-            raise SvnError("Invalid color ('%s') specified for '%s'" % (
+            raise SvnError("invalid color ('%s') specified for '%s'" % (
                 foreground, key))
         if background is not None and background not in colorDict:
-            raise SvnError("Invalid color ('%s') specified for '%s'" % (
+            raise SvnError("invalid color ('%s') specified for '%s'" % (
                 background, key))
 
         colorScheme[key] = [foreground, background]
@@ -843,7 +843,7 @@ def main():
         cmd = args.pop(0)
         if cmd == "exectty":
             if not args:
-                raise SvnError("Missing arguments for exectty")
+                raise SvnError("missing arguments for exectty")
 
             # Force stdout to be the same as stderr, then exec args.
             os.dup2(2, 1)
