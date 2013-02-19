@@ -507,10 +507,20 @@ def svnUrlSplitPeg(url):
     return newUrl, peg
 
 def svnUrlSplit(url):
+    """Split into head, middle, tail.
+
+    If middle can't be found, return (url, "", "").
+    If middle is found:
+    - head will always end with "/".
+    - middle will not have slashes on either side.
+    - tail may start with a slash or "@", or may be empty.
+    - only tail may contain a peg revision.
+
+    """
+
     m = re.match(r"""
-            (?P<head> .*?)
-            /
-            (?P<middle> trunk | (tags | branches) (/ guests / [^/]+)? / [^/]+)
+            (?P<head> .*? /)
+            (?P<middle> trunk | (tags | branches) (/ guests / [^/@]+)? / [^/@]+)
             (?P<tail> .*)
         """, url, re.MULTILINE | re.VERBOSE)
     if m:
@@ -518,12 +528,19 @@ def svnUrlSplit(url):
     else:
         return url, "", ""
 
-def svnUrlJoin(head, middle, tail):
+def svnUrlJoin(head, middle, tail=""):
     url = head
+    middle = middle.strip("/")
+    tail = tail.strip("/")
     if middle:
-        url += "/" + middle
+        if not url.endswith("/"):
+            url += "/"
+        url += middle
     if tail:
-        url += tail
+        if tail[0] in "@/" or url.endswith("/"):
+            url += tail
+        else:
+            url += "/" + tail
     return url
 
 def svnUrlSplitHead(url):
@@ -537,7 +554,7 @@ def svnUrlSplitTail(url):
 def isUrl(path):
     return re.match(r"\w+://", path) is not None
 
-def svnGetUrl(path="."):
+def svnGetUrl(path):
     # If this is already a URL, return it unchanged.
     if isUrl(path):
         return path
@@ -547,6 +564,9 @@ def svnGetUrl(path="."):
         return infoDict["URL"]
     except IndexError, KeyError:
         raise SvnError("invalid subversion path %r" % path)
+
+def svnGetUrlSplit(path):
+    return svnUrlSplit(svnGetUrl(path))
 
 def svnGetUrlHead(url):
     return svnUrlSplitHead(svnGetUrl(url))
@@ -589,36 +609,38 @@ def svnUrlMap(url):
             before = m.group("keyBefore")
             key = m.group("key")
             after = m.group("keyAfter")
-            if before.endswith("/") and before != "/":
-                before = before[:-1]
-            # Add "/" after "keyword:", but only if what follows is non-empty,
-            # does not have a leading slash, and is not a peg revision.
-            if after and after[0] not in "/@":
-                after = "/" + after
             if key == "pr":
                 url = getEnviron("P")
             elif key == "pp":
                 url = getEnviron("PP")
             elif key == "tr":
-                url = svnGetUrlHead(before) + "/trunk"
+                url = svnUrlJoin(svnGetUrlHead(before), "trunk")
             elif key == "br":
-                url = svnGetUrlHead(before) + "/branches"
+                url = svnUrlJoin(svnGetUrlHead(before), "branches")
             elif key == "tag":
-                url = svnGetUrlHead(before) + "/tags"
+                url = svnUrlJoin(svnGetUrlHead(before), "tags")
             elif key == "rel":
-                url = svnGetUrlHead(before) + "/tags/release"
+                url = svnUrlJoin(svnGetUrlHead(before), "tags/release")
             elif key == "gb":
-                url = svnGetUrlHead(before) + "/branches/guests"
+                url = svnUrlJoin(svnGetUrlHead(before), "branches/guests")
             elif key == "gt":
-                url = svnGetUrlHead(before) + "/tags/guests"
+                url = svnUrlJoin(svnGetUrlHead(before), "tags/guests")
             elif key == "mb":
-                url = svnGetUrlHead(before) + "/branches/guests/" + getUser()
+                url = svnUrlJoin(svnGetUrlHead(before), "branches/guests/" +
+                        getUser())
             elif key == "mt":
-                url = svnGetUrlHead(before) + "/tags/guests/" + getUser()
+                url = svnUrlJoin(svnGetUrlHead(before), "tags/guests/" +
+                        getUser())
+            elif key == "ws":
+                wsHead, wsMiddle, ignoredTail = svnGetUrlSplit(before)
+                if not wsMiddle:
+                    wsMiddle = "trunk"
+                wsMiddle += "/workspace"
+                url = svnUrlJoin(wsHead, wsMiddle)
             else:
                 raise SvnError("unknown keyword '%s:' in URL" % key)
 
-            url += after
+            url = svnUrlJoin(url, "", after)
         else:
             break
         if url in urlHistory:
@@ -751,6 +773,8 @@ Svnwrap configuration file: %(svnwrapIniPath)s
 - URL is composed of _prefix_, keyword, _suffix_
 - _prefix_ + keyword become new _prefix_; _suffix_ (if present) is appended.
 - _head_ means that part of _prefix_ which comes before "trunk", "tags", etc.
+- _middle-or-trunk_ is a "middle" part (e.g., "trunk", "tags/tagname", ...),
+  derived from current "middle" part or "trunk" if no middle part in context.
 
 Keyword     _prefix_ + keyword becomes:
 -------     -------------------------------------------------------
@@ -763,6 +787,7 @@ tag:        _head_/tags
 gt:         _head_/tags/guests
 mt:         _head_/tags/guests/$USER
 rel:        _head_/tags/release
+ws:         _head_/_middle-or-trunk_/workspace
 pr:         $P
 pp:         $PP
 
@@ -950,7 +975,7 @@ def main():
             for arg in posArgs:
                 writeLn(svnGetUrl(arg))
         else:
-            writeLn(svnGetUrl())
+            writeLn(svnGetUrl("."))
 
     elif cmd == "br":
         if len(posArgs) != 1:
