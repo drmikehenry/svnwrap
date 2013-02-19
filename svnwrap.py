@@ -237,10 +237,15 @@ def writeLines(lines):
         writeLn(line)
 
 def svnCall(args=[]):
-    subprocess.call([SVN] + args)
+    subprocessArgs = [SVN] + args
+    retCode = subprocess.call(subprocessArgs)
+    if retCode != 0:
+        raise SvnError("failing return code %d for external program:\n  %s" % 
+                (retCode, " ".join(subprocessArgs)))
 
 def svnGen(args, regex=None):
-    svn = subprocess.Popen([SVN] + args, stdout=subprocess.PIPE)
+    subprocessArgs = [SVN] + args
+    svn = subprocess.Popen(subprocessArgs, stdout=subprocess.PIPE)
     while 1:
         line = svn.stdout.readline()
         if line:
@@ -248,7 +253,12 @@ def svnGen(args, regex=None):
             if regex is None or not re.search(regex, line):
                 yield line
         else:
-            return
+            break
+    svn.wait()
+    retCode = svn.returncode
+    if retCode != 0:
+        raise SvnError("failing return code %d for external program:\n  %s" % 
+                (retCode, " ".join(subprocessArgs)))
 
 def svnGenCmd(cmd, args, regex=None):
     return svnGen([cmd] + args, regex)
@@ -981,9 +991,10 @@ def mainWithSvnErrorHandling():
     try:
         main()
     except KeyboardInterrupt:
-        pass
+        print "svnwrap: keyboard interrupt"
+        sys.exit(1)
     except SvnError, e:
-        print "svnwrap: %s" % str(e)
+        print "svnwrap: %s" % e
         sys.exit(1)
 
 def colorTest():
