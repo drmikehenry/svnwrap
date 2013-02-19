@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = '0.5.0'
+__VERSION__ = "0.5.0"
 
 import sys
 import re
@@ -89,27 +89,27 @@ def subversionConfig():
     config.read(getSubversionIniPath())
     return config
 
-STATUS_REX = r'^Performing status|^\s*$|^X[ \t]'
-UPDATE_REX = (r'^Fetching external|^External |^Updated external|^\s*$' +
-    r'|^At revision')
-CHECKOUT_REX = (r'^Fetching external|^\s*$')
+STATUS_REX = r"^Performing status|^\s*$|^X[ \t]"
+UPDATE_REX = (r"^Fetching external|^External |^Updated external|^\s*$" +
+    r"|^At revision")
+CHECKOUT_REX = (r"^Fetching external|^\s*$")
 
-SVN = 'svn'
+SVN = "svn"
 
 colorNames = [
-    'black',
-    'red',
-    'green',
-    'yellow',
-    'blue',
-    'magenta',
-    'cyan',
-    'white']
+    "black",
+    "red",
+    "green",
+    "yellow",
+    "blue",
+    "magenta",
+    "cyan",
+    "white"]
 
 colorDict = {}
 for i, baseName in enumerate(colorNames):
-    colorDict['dark' + baseName] = i
-    colorDict['light' + baseName] = i + 8
+    colorDict["dark" + baseName] = i
+    colorDict["light" + baseName] = i + 8
 
 '''
 [30m  black foreground
@@ -122,19 +122,19 @@ for i, baseName in enumerate(colorNames):
 '''
 
 colorScheme = {
-        'diffAdd': ['darkblue', None],
-        'diffRemoved': ['lightred', None],
-        'diffMisc': ['darkyellow', None],
-        'conflict': ['lightwhite', 'darkred'],
-        'statusAdded': ['darkgreen', None],
-        'statusDeleted': ['darkred', None],
-        'statusUpdated': ['darkblue', None],
-        'statusConflict': ['lightwhite', 'darkred'],
-        'statusModified': ['darkblue', None],
-        'statusMerged': ['darkmagenta', None],
-        'statusUntracked': ['lightblack', None],
-        'status': ['lightblack', None],
-        'info': ['darkgreen', None],
+        "diffAdd": ["darkblue", None],
+        "diffRemoved": ["lightred", None],
+        "diffMisc": ["darkyellow", None],
+        "conflict": ["lightwhite", "darkred"],
+        "statusAdded": ["darkgreen", None],
+        "statusDeleted": ["darkred", None],
+        "statusUpdated": ["darkblue", None],
+        "statusConflict": ["lightwhite", "darkred"],
+        "statusModified": ["darkblue", None],
+        "statusMerged": ["darkmagenta", None],
+        "statusUntracked": ["lightblack", None],
+        "status": ["lightblack", None],
+        "info": ["darkgreen", None],
 }
 
 entryNameToStyleName = {}
@@ -144,7 +144,7 @@ for key in colorScheme:
 def readColorScheme():
     config = svnwrapConfig()
     try:
-        configuredColors = dict(config.items('colors'))
+        configuredColors = dict(config.items("colors"))
     except ConfigParser.NoSectionError:
         configuredColors = {}
 
@@ -154,7 +154,7 @@ def readColorScheme():
 
         if key not in validKeys:
             continue
-        colors = map(lambda x: x.strip() or 'default', value.split(','))
+        colors = map(lambda x: x.strip() or "default", value.split(","))
         if len(colors) == 1:
             foreground, background = colors[0], None
         elif len(colors) == 2:
@@ -164,9 +164,9 @@ def readColorScheme():
                     "Invalid number of colors specified for '%s' in config" % (
                         key,))
 
-        if foreground == 'default':
+        if foreground == "default":
             foreground = colorScheme[key][0]
-        if background == 'default':
+        if background == "default":
             background = colorScheme[key][1]
 
         if foreground is not None and foreground not in colorDict:
@@ -188,13 +188,13 @@ if usingColor and platformIsWindows:
 
 def setColorNum(colorNum):
     if usingColor:
-        return '\x1b[%dm' % colorNum
+        return "\x1b[%dm" % colorNum
     else:
-        return ''
+        return ""
 
 def setForeground(foreground):
     if foreground is None:
-        return ''
+        return ""
     i = colorDict[foreground]
     if i < 8:
         colorNum = 30 + i
@@ -204,7 +204,7 @@ def setForeground(foreground):
 
 def setBackground(background):
     if background is None:
-        return ''
+        return ""
     i = colorDict[background]
     if i < 8:
         colorNum = 40 + i
@@ -227,7 +227,7 @@ def write(s, f=sys.stdout):
     f.flush()
 
 def writeLn(line = ""):
-    write(line + '\n')
+    write(line + "\n")
 
 def writeLines(lines):
     for line in lines:
@@ -241,7 +241,7 @@ def svnGen(args, regex = None):
     while 1:
         line = svn.stdout.readline()
         if line:
-            line = line.rstrip('\r\n')
+            line = line.rstrip("\r\n")
             if regex is None or not re.search(regex, line):
                 yield line
         else:
@@ -260,30 +260,30 @@ def addConflictLine(line):
 def displayConflicts():
     if conflictingLines:
         writeLn(wrapColor("Total conflicts: %d" % len(conflictingLines),
-            'statusConflict'))
+            "statusConflict"))
         for line in conflictingLines:
-            writeLn(wrapColor(line, 'statusConflict'))
+            writeLn(wrapColor(line, "statusConflict"))
 
 def splitStatus(statusLine):
     path = statusLine[7:]
-    if path.startswith(' '):
+    if path.startswith(" "):
         path = path[1:]
     return statusLine[:7], path
 
 def svnGenStatus(statusArgs, modified = False, namesOnly = False):
-    for line in svnGenCmd('st', statusArgs, regex = STATUS_REX):
+    for line in svnGenCmd("st", statusArgs, regex = STATUS_REX):
         status, name = splitStatus(line)
         if namesOnly:
             yield name
         elif modified:
-            if not status.startswith('?'):
+            if not status.startswith("?"):
                 yield name
         else:
             yield line
 
 def svnGenInfo(infoArgs):
     infoDict = {}
-    for line in svnGenCmd('info', infoArgs):
+    for line in svnGenCmd("info", infoArgs):
         if ":" in line:
             key, value = line.split(":", 1)
             infoDict[key.strip()] = value.strip()
@@ -292,21 +292,21 @@ def svnGenInfo(infoArgs):
             infoDict = {}
 
 def svnGenDiff(args, ignoreSpaceChange=False):
-    cmd = ['diff']
+    cmd = ["diff"]
     if ignoreSpaceChange:
-        cmd.extend(['-x', '-b'])
+        cmd.extend(["-x", "-b"])
     return svnGen(cmd + args)
 
 def wrapDiffLines(gen):
     for line in gen:
         c = line[:1]
-        if c == '+':
-            line = wrapColor(line, 'diffAdd')
-            #line = wrapColor(line, 'darkgreen')
-        elif c == '-':
-            line = wrapColor(line, 'diffRemoved')
-        elif c == '@':
-            line = wrapColor(line, 'diffMisc')
+        if c == "+":
+            line = wrapColor(line, "diffAdd")
+            #line = wrapColor(line, "darkgreen")
+        elif c == "-":
+            line = wrapColor(line, "diffRemoved")
+        elif c == "@":
+            line = wrapColor(line, "diffMisc")
         yield line
 
 def writeDiffLines(gen):
@@ -316,25 +316,25 @@ def writeDiffLines(gen):
 def wrapStatusLines(gen):
     for line in gen:
         c = line[:1]
-        if (line.startswith('Checked out') or
-                line.startswith('Updated to revision') or
-                line.startswith('At revision')):
-            line = wrapColor(line, 'status')
-        elif c == 'A':
-            line = wrapColor(line, 'statusAdded')
-        elif c == 'D':
-            line = wrapColor(line, 'statusDeleted')
-        elif c == 'U':
-            line = wrapColor(line, 'statusUpdated')
-        elif c == 'C':
+        if (line.startswith("Checked out") or
+                line.startswith("Updated to revision") or
+                line.startswith("At revision")):
+            line = wrapColor(line, "status")
+        elif c == "A":
+            line = wrapColor(line, "statusAdded")
+        elif c == "D":
+            line = wrapColor(line, "statusDeleted")
+        elif c == "U":
+            line = wrapColor(line, "statusUpdated")
+        elif c == "C":
             addConflictLine(line)
-            line = wrapColor(line, 'statusConflict')
-        elif c == 'M':
-            line = wrapColor(line, 'statusModified')
-        elif c == 'G':
-            line = wrapColor(line, 'statusMerged')
-        elif c == '?':
-            line = wrapColor(line, 'statusUntracked')
+            line = wrapColor(line, "statusConflict")
+        elif c == "M":
+            line = wrapColor(line, "statusModified")
+        elif c == "G":
+            line = wrapColor(line, "statusMerged")
+        elif c == "?":
+            line = wrapColor(line, "statusUntracked")
         yield line
 
 def writeStatusLines(gen):
@@ -355,19 +355,19 @@ class ExtDiffer:
         self.reset()
 
     def addLine(self, line):
-        if re.match(r'\s+- ', line):
+        if re.match(r"\s+- ", line):
             self.propIndex = 0
             line = line.lstrip()[2:]
-        elif re.match(r'\s+\+ ', line):
+        elif re.match(r"\s+\+ ", line):
             self.propIndex = 1
             line = line.lstrip()[2:]
         if self.ignoreSpaceChange:
-            line = ' '.join(line.strip().split()) + '\n'
+            line = " ".join(line.strip().split()) + "\n"
         self.propLines[self.propIndex].append(line)
 
     def genDiffLines(self):
         newPropLines = self.propLines[1]
-        if newPropLines and newPropLines[-1].strip() == '':
+        if newPropLines and newPropLines[-1].strip() == "":
             extraLine = newPropLines.pop()
         else:
             extraLine = None
@@ -387,11 +387,11 @@ def diffFilter(lines, ignoreSpaceChange=False):
     extDiffer = ExtDiffer(ignoreSpaceChange)
     inExt = False
     for line in lines:
-        if inExt and re.match(r'\w+:\s', line):
+        if inExt and re.match(r"\w+:\s", line):
             for d in extDiffer.genDiffLines():
                 yield d
             inExt = False
-        if not inExt and re.match(r'(Name|Modified): svn:externals', line):
+        if not inExt and re.match(r"(Name|Modified): svn:externals", line):
             inExt = True
             yield line
         elif inExt:
@@ -414,7 +414,7 @@ def commonPrefix(seq1, seq2, partsEqual=lambda part1, part2: part1 == part2):
 def pathsEqual(path1, path2):
     return os.path.normcase(path1) == os.path.normcase(path2)
 
-def relPath(wcPath, startDir='.'):
+def relPath(wcPath, startDir="."):
     destPathParts = os.path.abspath(wcPath).split(os.sep)
     startDirParts = os.path.abspath(startDir).split(os.sep)
     commonPartsLen = len(commonPrefix(destPathParts, startDirParts, 
@@ -426,24 +426,24 @@ def relPath(wcPath, startDir='.'):
 
 def relWalk(top):
     for root, dirs, files in os.walk(top):
-        for d in ['.svn', '_svn']:
+        for d in [".svn", "_svn"]:
             if d in dirs:
                 dirs.remove(d)
         yield root, dirs, files
 
 def isSvnDir(path):
-    return os.path.isdir(os.path.join(path, '.svn'))
+    return os.path.isdir(os.path.join(path, ".svn"))
 
 def svnMergeRaw(rawRoot, wcRoot):
     ## @bug Cannot handle changing a file into a directory or vice-versa.
     if not os.path.isdir(rawRoot):
-        print 'not a directory: %r' % rawRoot
+        print "not a directory: %r" % rawRoot
         return
     if isSvnDir(rawRoot):
-        print 'cannot use Subversion working copy: %r' % rawRoot
+        print "cannot use Subversion working copy: %r" % rawRoot
         return
     if not isSvnDir(wcRoot):
-        print 'not a Subversion working copy: %r' % wcRoot
+        print "not a Subversion working copy: %r" % wcRoot
         return
     for root, dirs, files in relWalk(rawRoot):
         for d in dirs:
@@ -451,20 +451,20 @@ def svnMergeRaw(rawRoot, wcRoot):
             rel = relPath(rawPath, rawRoot)
             wcPath = os.path.join(wcRoot, rel)
             if not os.path.isdir(wcPath):
-                print 'adding directory %r' % rel
+                print "adding directory %r" % rel
                 shutil.copytree(rawPath, wcPath)
-                svnCall(['add', wcPath])
+                svnCall(["add", wcPath])
                 dirs.remove(d)
         for f in files:
             rawPath = os.path.join(root, f)
             rel = relPath(rawPath, rawRoot)
             wcPath = os.path.join(wcRoot, rel)
             alreadyAdded = os.path.isfile(wcPath)
-            print 'copying file %r' % rel
+            print "copying file %r" % rel
             shutil.copyfile(rawPath, wcPath)
             if not alreadyAdded:
-                print 'adding file %r' % rel
-                svnCall(['add', wcPath])
+                print "adding file %r" % rel
+                svnCall(["add", wcPath])
 
     for root, dirs, files in relWalk(wcRoot):
         for d in dirs:
@@ -472,22 +472,22 @@ def svnMergeRaw(rawRoot, wcRoot):
             rel = relPath(wcPath, wcRoot)
             rawPath = os.path.join(rawRoot, rel)
             if not os.path.isdir(rawPath):
-                print 'removing directory %r' % rel
-                svnCall(['rm', wcPath])
+                print "removing directory %r" % rel
+                svnCall(["rm", wcPath])
                 dirs.remove(d)
         for f in files:
             wcPath = os.path.join(root, f)
             rel = relPath(wcPath, wcRoot)
             rawPath = os.path.join(rawRoot, rel)
             if not os.path.isfile(rawPath):
-                print 'removing file %r' % rel
-                svnCall(['rm', wcPath])
+                print "removing file %r" % rel
+                svnCall(["rm", wcPath])
 
 def getUser():
     return getEnviron("USER")
 
 def svnUrlSplitPeg(url):
-    m = re.match(r'(.*)(@\d+)$', url)
+    m = re.match(r"(.*)(@\d+)$", url)
     if m:
         newUrl, peg = m.group(1), m.group(2)
     else:
@@ -495,12 +495,12 @@ def svnUrlSplitPeg(url):
     return newUrl, peg
 
 def svnUrlSplit(url):
-    m = re.match(r'''
+    m = re.match(r"""
             (?P<head> .*?)
             /
             (?P<middle> trunk | (tags | branches) (/ guests / [^/]+)? / [^/]+)
             (?P<tail> .*)
-        ''', url, re.MULTILINE | re.VERBOSE)
+        """, url, re.MULTILINE | re.VERBOSE)
     if m:
         return m.group("head"), m.group("middle"), m.group("tail")
     else:
@@ -523,7 +523,7 @@ def svnUrlSplitTail(url):
     return tail
 
 def isUrl(path):
-    return re.match(r'\w+://', path) is not None
+    return re.match(r"\w+://", path) is not None
 
 def svnGetUrl(path="."):
     # If this is already a URL, return it unchanged.
@@ -547,7 +547,7 @@ def svnUrlMap(url):
     urlHistory = set()
     aliases = getAliases()
     while True:
-        m = re.match(r'''
+        m = re.match(r"""
                     # Alias of the form //alias ...
                     //(?P<alias>[^/]+) (?P<aliasAfter>.*)
                 | 
@@ -562,7 +562,7 @@ def svnUrlMap(url):
 
                     # After the colon, must not have two slashes.
                     (?P<keyAfter> .? $ | [^/] .* | / [^/] .*)
-            ''', url, re.MULTILINE | re.VERBOSE)
+            """, url, re.MULTILINE | re.VERBOSE)
 
         if m and m.group("alias"):
             alias = m.group("alias")
@@ -690,13 +690,13 @@ def adjustUrlForWcPath(url, wcPath):
 
 def helpWrap(args=[], summary=False):
     if summary:
-        write('''
+        write("""
 Type 'svn helpwrap' for help on svnwrap extensions.
-''')
+""")
     else:
         svnwrapIniPath = getSvnwrapIniPath()
         version = __VERSION__
-        write('''\
+        write("""\
 svnwrap version %(version)s providing:
 - Suppression of noisy status output
 - Highlighting of status, diff, and other outputs
@@ -753,7 +753,7 @@ pr:         $P
 pp:         $PP
 
 (Above, P, PP, and USER are environment variables.)
-''' % vars())
+""" % vars())
 
 def parseArgs():
     """Return (switchArgs, posArgs)."""
@@ -767,23 +767,23 @@ def parseArgs():
         if argsToSkip:
             argsToSkip -= 1
             switchArgs.append(arg)
-        elif arg == '--debug':
+        elif arg == "--debug":
             global debugging
             debugging = True
-        elif arg == '--test':
+        elif arg == "--test":
             global SVN
-            SVN = './testsvn.py'
-        elif arg == '--color':
+            SVN = "./testsvn.py"
+        elif arg == "--color":
             global usingColor
             if args:
                 colorFlag = args.pop(0)
             else:
-                colorFlag = ''
-            if colorFlag == 'on':
+                colorFlag = ""
+            if colorFlag == "on":
                 usingColor = True
-            elif colorFlag == 'off':
+            elif colorFlag == "off":
                 usingColor = False
-            elif colorFlag != 'auto':
+            elif colorFlag != "auto":
                 helpWrap(summary=True)
                 sys.exit()
         elif arg.startswith("--"):
@@ -855,51 +855,51 @@ def main():
         else:
             helpWrap(summary=True)
 
-    elif cmd == 'help' and not args:
-        svnCall(['help'])
+    elif cmd == "help" and not args:
+        svnCall(["help"])
         helpWrap(summary=True)
 
-    elif cmd == 'helpwrap':
+    elif cmd == "helpwrap":
         helpWrap(args)
 
-    elif cmd == 'st' or cmd == 'stat' or cmd == 'status':
+    elif cmd == "st" or cmd == "stat" or cmd == "status":
         writeStatusLines(svnGenStatus(args))
 
-    elif cmd == 'stnames':
+    elif cmd == "stnames":
         writeLines(svnGenStatus(args, namesOnly=True))
 
-    elif cmd == 'stmod':
+    elif cmd == "stmod":
         writeLines(svnGenStatus(args, modified=True))
 
-    elif cmd == 'stmodroot':
+    elif cmd == "stmodroot":
         d = {}
         for line in svnGenStatus(args, modified=True):
-            line = re.sub(r'/.*', '', line)
+            line = re.sub(r"/.*", "", line)
             d[line] = 1
         for name in sorted(d):
             writeLn(name)
 
-    elif cmd == 'stmodrevert':
+    elif cmd == "stmodrevert":
         mods = [line.rstrip() for line in svnGenStatus(args, modified=True)]
         svnRevert(mods)
 
-    elif cmd in ['up', 'update']:
+    elif cmd in ["up", "update"]:
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
-    elif cmd in ['co', 'checkout']:
+    elif cmd in ["co", "checkout"]:
         writeUpdateLines(svnGenCmd(cmd, args, regex=CHECKOUT_REX))
 
-    elif cmd in ['diff', 'ediff', 'di']:
+    elif cmd in ["diff", "ediff", "di"]:
         writeDiffLines(diffFilter(svnGenDiff(args)))
 
-    elif cmd in ['bdiff', 'ebdiff']:
+    elif cmd in ["bdiff", "ebdiff"]:
         writeDiffLines(diffFilter(svnGenDiff(args, ignoreSpaceChange=True),
             ignoreSpaceChange=True))
 
-    elif cmd in ['kdiff', 'kdiff3']:
-        svnCall(['diff', '--diff-cmd', 'kdiff3', '-x', '--qall'] + args)
+    elif cmd in ["kdiff", "kdiff3"]:
+        svnCall(["diff", "--diff-cmd", "kdiff3", "-x", "--qall"] + args)
 
-    elif cmd == 'mergeraw':
+    elif cmd == "mergeraw":
         if not args or len(args) > 2:
             writeLn("mergeraw RAWPATH [WCPATH]")
             sys.exit(1)
@@ -907,27 +907,27 @@ def main():
         if args:
             wcRoot = args.pop(0)
         else:
-            wcRoot = '.'
+            wcRoot = "."
         svnMergeRaw(rawRoot, wcRoot)
 
-    elif cmd == 'ee':
+    elif cmd == "ee":
         if not args:
             args.append(".")
         svnCall("propedit svn:externals".split() + args)
 
-    elif cmd == 'ei':
+    elif cmd == "ei":
         if not args:
             args.append(".")
         svnCall("propedit svn:ignore".split() + args)
 
-    elif cmd == 'url':
+    elif cmd == "url":
         if posArgs:
             for arg in posArgs:
                 writeLn(svnGetUrl(arg))
         else:
             writeLn(svnGetUrl())
 
-    elif cmd == 'br':
+    elif cmd == "br":
         if len(posArgs) != 1:
             raise SvnError("br takes exactly one URL")
         # Default to branches of current URL, but absolute URL following
@@ -937,7 +937,7 @@ def main():
         cpArgs = ["cp", trunk, branch] + switchArgs
         svnCall(cpArgs)
 
-    elif cmd in ['sw', 'switch']:
+    elif cmd in ["sw", "switch"]:
         if 1 <= len(posArgs) <= 2 and "--relocate" not in switchArgs:
             url = posArgs.pop(0)
             if posArgs:
@@ -973,7 +973,7 @@ def mainWithSvnErrorHandling():
 
 def colorTest():
     for color in sorted(colorDict):
-        writeLn(wrapColor('This is %s' % color, color))
+        writeLn(wrapColor("This is %s" % color, color))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     mainWithSvnErrorHandling()
