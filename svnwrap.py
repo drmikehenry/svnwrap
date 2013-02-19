@@ -921,6 +921,8 @@ def main():
 def mainWithSvnErrorHandling():
     try:
         main()
+    except KeyboardInterrupt:
+        pass
     except SvnError, e:
         print "svnwrap: %s" % str(e)
         sys.exit(1)
