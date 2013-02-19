@@ -12,6 +12,8 @@ import platform
 import shutil
 import ConfigParser
 
+platformIsWindows = platform.system() == "Windows"
+
 sampleIniContents = """
 [aliases]
 ## Create aliases like this:
@@ -44,7 +46,7 @@ def getEnviron(envVar, default=None):
 
 def getConfigDir():
     configHome = os.path.join(getEnviron("HOME", ""), ".config")
-    if os.name == "nt":
+    if platformIsWindows:
         configHome = getEnviron("APPDATA", configHome)
     configHome = getEnviron("XDG_CONFIG_HOME", configHome)
     return os.path.join(configHome, "svnwrap")
@@ -162,7 +164,7 @@ def readColorScheme():
         colorScheme[key] = [foreground, background]
 
 usingColor = os.isatty(sys.stdout.fileno())
-if usingColor and platform.system() == 'Windows':
+if usingColor and platformIsWindows:
     try:
         import colorama
         colorama.init()
