@@ -226,17 +226,17 @@ def write(s, f=sys.stdout):
     f.write(s)
     f.flush()
 
-def writeLn(line = ""):
+def writeLn(line=""):
     write(line + "\n")
 
 def writeLines(lines):
     for line in lines:
         writeLn(line)
 
-def svnCall(args = []):
+def svnCall(args=[]):
     subprocess.call([SVN] + args)
 
-def svnGen(args, regex = None):
+def svnGen(args, regex=None):
     svn = subprocess.Popen([SVN] + args, stdout=subprocess.PIPE)
     while 1:
         line = svn.stdout.readline()
@@ -247,7 +247,7 @@ def svnGen(args, regex = None):
         else:
             return
 
-def svnGenCmd(cmd, args, regex = None):
+def svnGenCmd(cmd, args, regex=None):
     return svnGen([cmd] + args, regex)
 
 def svnRevert(args):
@@ -270,8 +270,8 @@ def splitStatus(statusLine):
         path = path[1:]
     return statusLine[:7], path
 
-def svnGenStatus(statusArgs, modified = False, namesOnly = False):
-    for line in svnGenCmd("st", statusArgs, regex = STATUS_REX):
+def svnGenStatus(statusArgs, modified=False, namesOnly=False):
+    for line in svnGenCmd("st", statusArgs, regex=STATUS_REX):
         status, name = splitStatus(line)
         if namesOnly:
             yield name
