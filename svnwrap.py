@@ -850,6 +850,7 @@ def parseArgs():
                 argsToSkip = getSwitchArgCount(arg)
                 if argsToSkip and s:
                     argsToSkip -= 1
+                    arg += s
                     s = ""
             switchArgs.append(arg)
         else:
