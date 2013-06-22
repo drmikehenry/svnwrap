@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = "0.5.0"
+__VERSION__ = "0.5.1"
 
 import sys
 import re
@@ -679,15 +679,15 @@ oneArgSwitches = set("""
 --show-revs --strip --targets --username --with-revprop -F -c -l -m -r -x
 """.split())
 
-switchArgCount = {}
+switchToArgCountMap = {}
 for arg in zeroArgSwitches:
-    switchArgCount[arg] = 0
+    switchToArgCountMap[arg] = 0
 for arg in oneArgSwitches:
-    switchArgCount[arg] = 1
+    switchToArgCountMap[arg] = 1
 
 def getSwitchArgCount(s):
     try:
-        return switchArgCount[s]
+        return switchToArgCountMap[s]
     except KeyError:
         raise SvnError("invalid switch %r" % s)
 
@@ -808,15 +808,15 @@ For more details, see the README.rst file distributed with svnwrap.
 def parseArgs():
     """Return (switchArgs, posArgs)."""
 
-    argsToSkip = 0
+    debugArgParsing = False
     switchArgs = []
     posArgs = []
     args = sys.argv[1:]
     while args:
+        switchArgCount = 0
         arg = args.pop(0)
-        if argsToSkip:
-            argsToSkip -= 1
-            switchArgs.append(arg)
+        if arg == "--debug-args":
+            debugArgParsing = True
         elif arg == "--debug":
             global debugging
             debugging = True
@@ -837,8 +837,16 @@ def parseArgs():
                 helpWrap(summary=True)
                 sys.exit()
         elif arg.startswith("--"):
-            argsToSkip = getSwitchArgCount(arg)
+            if "=" in arg:
+                arg, attachedArg = arg.split("=", 1)
+            else:
+                attachedArg = None
+            switchArgCount = getSwitchArgCount(arg)
             switchArgs.append(arg)
+            if attachedArg is not None:
+                if switchArgCount == 0:
+                    raise SvnError("switch %s takes no arguments" % arg)
+                args.insert(0, attachedArg)
         elif arg.startswith("-"):
             if arg == "-":
                 raise SvnError("invalid switch '-'")
@@ -847,13 +855,22 @@ def parseArgs():
             while s:
                 arg = "-" + s[0]
                 s = s[1:]
-                argsToSkip = getSwitchArgCount(arg)
-                if argsToSkip and s:
-                    argsToSkip -= 1
+                switchArgCount = getSwitchArgCount(arg)
+                switchArgs.append(arg)
+                if switchArgCount and s:
+                    args.insert(0, s)
                     s = ""
-            switchArgs.append(arg)
         else:
             posArgs.append(arg)
+        if switchArgCount > len(args):
+            raise SvnError("switch %s requires %d argument%s" % (
+                arg, switchArgCount, switchArgCount > 1 and "s" or ""))
+        switchArgs.extend(args[:switchArgCount])
+        del args[:switchArgCount]
+    if debugArgParsing:
+        writeLn("switchArgs = %s" % repr(switchArgs))
+        writeLn("posArgs = %s" % repr(posArgs))
+        sys.exit()
     return switchArgs, posArgs
 
 def setupSvnEditor():
