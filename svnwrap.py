@@ -1017,7 +1017,7 @@ def main():
 
     elif cmd == "merge":
         if len(posArgs) > 1 and not isUrl(posArgs[-1]):
-            wcPath = popArgs.pop()
+            wcPath = posArgs.pop()
         else:
             wcPath = "."
         urls = [adjustUrlForWcPath(url, wcPath) for url in posArgs]
