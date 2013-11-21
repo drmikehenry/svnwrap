@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = "0.5.2"
+__VERSION__ = "0.5.3"
 
 import sys
 import re
@@ -125,15 +125,15 @@ for i, baseName in enumerate(colorNames):
 '''
 
 colorScheme = {
-        "diffAdd": ["darkblue", None],
+        "diffAdd": ["lightblue", None],
         "diffRemoved": ["lightred", None],
         "diffMisc": ["darkyellow", None],
         "conflict": ["lightwhite", "darkred"],
         "statusAdded": ["darkgreen", None],
         "statusDeleted": ["darkred", None],
-        "statusUpdated": ["darkblue", None],
+        "statusUpdated": ["lightblue", None],
         "statusConflict": ["lightwhite", "darkred"],
-        "statusModified": ["darkblue", None],
+        "statusModified": ["lightblue", None],
         "statusMerged": ["darkmagenta", None],
         "statusUntracked": ["lightblack", None],
         "status": ["lightblack", None],

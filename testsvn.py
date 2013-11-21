@@ -22,6 +22,7 @@ A      svnwrap.sh
 ?      Wiki-20
 ?      Account-Manager
 C      svnwrap/testsvn.py
+G      svnwrap/merged.py
 ?      pyrepl
 ?      svnwrap/svnwrap.py
 
@@ -41,6 +42,7 @@ External
 ?      svnwrap
 A      svnwrap/svnwrap.sh
 C      svnwrap/testsvn.py
+G      svnwrap/merged.py
 A      other/stuff.py
 M      other/goodStuff.py
 Updated external
@@ -52,6 +54,7 @@ def fakeSwitch():
     write('''\
 A      svnwrap/svnwrap.sh
 C      svnwrap/testsvn.py
+G      svnwrap/merged.py
 D      other/stuff.py
           
 At revision 2.
