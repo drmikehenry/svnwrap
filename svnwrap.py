@@ -189,6 +189,14 @@ if usingColor and platformIsWindows:
     except ImportError, e:
         usingColor = False
 
+if os.isatty(sys.stdout.fileno()):
+    usePager = True
+else:
+    usePager = False
+
+# Will contain a subprocess.Popen object, if a pager is in use.
+pager = None
+
 def setColorNum(colorNum):
     if usingColor:
         return "\x1b[%dm" % colorNum
@@ -225,7 +233,13 @@ def wrapColor(s, style):
             s +
             resetColors())
 
-def write(s, f=sys.stdout):
+def write(s, f=None):
+    if f is None:
+        # We don't set f to sys.stdout as a default argument since a pager maybe
+        # launched and change the value of sys.stdout.  So we defer resolution
+        # until we need it.
+        f = sys.stdout
+
     f.write(s)
     f.flush()
 
@@ -836,6 +850,9 @@ def parseArgs():
             elif colorFlag != "auto":
                 helpWrap(summary=True)
                 sys.exit()
+        elif arg == "--no-pager":
+            global usePager
+            usePager = False
         elif arg.startswith("--"):
             if "=" in arg:
                 arg, attachedArg = arg.split("=", 1)
@@ -886,6 +903,24 @@ def setupSvnEditor():
         pass
     editor = getEnviron("SVN_EDITOR", default=editor)
     os.environ["SVN_EDITOR"] = sys.argv[0] + " exectty " + editor
+
+def setupPager():
+    if not usePager:
+        return
+
+    pagerCmd = "less"
+    pagerCmd = getEnviron("PAGER", default=pagerCmd)
+    pagerCmd = getEnviron("SVN_PAGER", default=pagerCmd)
+
+    global pager
+    try:
+        pager = subprocess.Popen(pagerCmd, stdin=subprocess.PIPE)
+    except OSError:
+        # Pager is not setup correctly, or command is missing.  Let's just
+        # move on.
+        return
+
+    sys.stdout = pager.stdin
 
 def main():
     # Arguments to "exectty" are unrelated to svnwrap arguments, so
@@ -957,9 +992,11 @@ def main():
         writeUpdateLines(svnGenCmd(cmd, args, regex=CHECKOUT_REX))
 
     elif cmd in ["diff", "ediff", "di"]:
+        setupPager()
         writeDiffLines(diffFilter(svnGenDiff(args)))
 
     elif cmd in ["bdiff", "ebdiff"]:
+        setupPager()
         writeDiffLines(diffFilter(svnGenDiff(args, ignoreSpaceChange=True),
             ignoreSpaceChange=True))
 
@@ -1024,10 +1061,18 @@ def main():
         args = switchArgs + urls + [wcPath]
         writeUpdateLines(svnGenCmd(cmd, args, regex=UPDATE_REX))
 
+    elif cmd == "log":
+        setupPager()
+        writeLines(svnGenCmd(cmd, args))
+
     else:
         svnCall([cmd] + args)
 
     displayConflicts()
+
+    if pager:
+        pager.stdin.close()
+        pager.wait()
 
 def mainWithSvnErrorHandling():
     try:
