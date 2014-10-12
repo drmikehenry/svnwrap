@@ -24,6 +24,14 @@ sampleIniContents = """
 ##
 ## Define aliases as follows:
 ## project1 = http://server/url/for/project1
+
+[pager]
+## The pager is used by several commands to paginate the output.  You can
+## customize it here, if you don't want to use the default for the system
+## (PAGER).
+##
+## enabled = true
+## cmd = less
 """
 
 # True when debugging.
@@ -908,8 +916,18 @@ def setupPager():
     if not usePager:
         return
 
+    config = svnwrapConfig()
+
+    if config.has_option("pager", "enabled") and \
+            not config.getboolean("pager", "enabled"):
+        return
+
     pagerCmd = "less"
     pagerCmd = getEnviron("PAGER", default=pagerCmd)
+    try:
+        pagerCmd = config.get("pager", "cmd")
+    except ConfigParser.Error:
+        pass
     pagerCmd = getEnviron("SVN_PAGER", default=pagerCmd)
 
     global pager
