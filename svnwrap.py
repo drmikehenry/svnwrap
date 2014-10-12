@@ -146,6 +146,13 @@ colorScheme = {
         "statusUntracked": ["lightblack", None],
         "status": ["lightblack", None],
         "info": ["darkgreen", None],
+        "logRev": ["lightyellow", None],
+        "logCommitter": ["lightblue", None],
+        "logDate": ["lightblack", None],
+        "logNumLines": ["lightblack", None],
+        "logFieldSeparator": ["lightblack", None],
+        "logSeparator": ["darkgreen", None],
+        "logText": ["darkwhite", None],
 }
 
 entryNameToStyleName = {}
@@ -377,6 +384,34 @@ def writeStatusLines(gen):
 
 def writeUpdateLines(gen):
     for line in wrapStatusLines(gen):
+        writeLn(line)
+
+def wrapLogLines(gen):
+    logRe = re.compile(
+            r"^(r\d+) \| (.*) \| (.*) \| (\d+ lines?)$")
+    separatorLine = 72 * '-'
+
+    for line in gen:
+        m = logRe.match(line)
+        if m:
+            # Do stuff...
+            fieldSeparator = wrapColor('|', "logFieldSeparator")
+            line = "%s %s %s %s %s %s %s" % (
+                    wrapColor(m.group(1), "logRev"),
+                    fieldSeparator,
+                    wrapColor(m.group(2), "logCommitter"),
+                    fieldSeparator,
+                    wrapColor(m.group(3), "logDate"),
+                    fieldSeparator,
+                    wrapColor(m.group(4), "logNumLines"))
+            yield line
+        elif line == separatorLine:
+            yield wrapColor(line, "logSeparator")
+        else:
+            yield wrapColor(line, "logText")
+
+def writeLogLines(gen):
+    for line in wrapLogLines(gen):
         writeLn(line)
 
 class ExtDiffer:
@@ -1081,7 +1116,7 @@ def main():
 
     elif cmd == "log":
         setupPager()
-        writeLines(svnGenCmd(cmd, args))
+        writeLogLines(svnGenCmd(cmd, args))
 
     else:
         svnCall([cmd] + args)
