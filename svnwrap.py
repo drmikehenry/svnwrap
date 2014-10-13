@@ -269,7 +269,7 @@ def svnCall(args=[]):
     subprocessArgs = [SVN] + args
     retCode = subprocess.call(subprocessArgs)
     if retCode != 0:
-        raise SvnError("failing return code %d for external program:\n  %s" % 
+        raise SvnError("failing return code %d for external program:\n  %s" %
                 (retCode, " ".join(subprocessArgs)))
 
 def svnGen(args, regex=None):
@@ -286,7 +286,7 @@ def svnGen(args, regex=None):
     svn.wait()
     retCode = svn.returncode
     if retCode != 0:
-        raise SvnError("failing return code %d for external program:\n  %s" % 
+        raise SvnError("failing return code %d for external program:\n  %s" %
                 (retCode, " ".join(subprocessArgs)))
 
 def svnGenCmd(cmd, args, regex=None):
@@ -443,7 +443,7 @@ class ExtDiffer:
         if self.propLines[0] or self.propLines[1]:
             delta = difflib.unified_diff(
                     self.propLines[0],
-                    self.propLines[1], n=0, 
+                    self.propLines[1], n=0,
                     fromfile="Old externals",
                     tofile="New externals")
             for d in delta:
@@ -486,7 +486,7 @@ def pathsEqual(path1, path2):
 def relPath(wcPath, startDir="."):
     destPathParts = os.path.abspath(wcPath).split(os.sep)
     startDirParts = os.path.abspath(startDir).split(os.sep)
-    commonPartsLen = len(commonPrefix(destPathParts, startDirParts, 
+    commonPartsLen = len(commonPrefix(destPathParts, startDirParts,
         pathsEqual))
     numDirectoriesUp = len(startDirParts) - commonPartsLen
     return os.path.normpath(os.path.join(
@@ -639,7 +639,7 @@ def svnUrlMap(url):
         m = re.match(r"""
                     # Alias of the form //alias ...
                     //(?P<alias>[^/]+) (?P<aliasAfter>.*)
-                | 
+                |
                     # Absolute URL (e.g., https://...) not at start.
                     .* [:/] (?P<url> \w {2,} :// .*)
                 |
@@ -752,8 +752,8 @@ def urlMapArgs(cmd, posArgs):
     if cmd in "propset pset ps".split():
         numUnmappablePosArgs = 2
     elif cmd in """
-            propdel pdel pd 
-            propedit pedit pe 
+            propdel pdel pd
+            propedit pedit pe
             propget pget pg""".split():
         numUnmappablePosArgs = 1
     else:
