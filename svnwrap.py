@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = "0.5.3"
+__VERSION__ = "0.6.0"
 
 import sys
 import re
