@@ -11,27 +11,36 @@ import difflib
 import platform
 import shutil
 import ConfigParser
+import shlex
 
 platformIsWindows = platform.system() == "Windows"
 
 sampleIniContents = """
 [aliases]
-## Aliases are used at the start of a URL.  They are replaced by their
-## aliased value.  When the alias "project1" has been defined, this URL:
-##   //project1
-## will be replaced by the associated URL, e.g.:
-##   http://server/url/for/project1
-##
-## Define aliases as follows:
+# Aliases are used at the start of a URL.  They are replaced by their
+# aliased value.  When the alias "project1" has been defined, this URL:
+#   //project1
+# will be replaced by the associated URL, e.g.:
+#   http://server/url/for/project1
+#
+# Define aliases as follows:
 ## project1 = http://server/url/for/project1
 
 [pager]
-## The pager is used by several commands to paginate the output.  You can
-## customize it here, if you don't want to use the default for the system
-## (PAGER).
-##
+# The pager is used by several commands to paginate the output.
+# Set "enabled" to "false" to disable use of a pager.
 ## enabled = true
-## cmd = less
+
+# Customize which pager to use (along with any desired arguments) via the "cmd"
+# setting here, or via the environment variable SVN_PAGER, or via the system
+# default specified in the PAGER environment variable.  If none of the above
+# are set, then "less -FRX" will be assumed.
+#
+# Switches for "less":
+#   -F  quit the pager early if output fits on one screen
+#   -R  process color escape sequences
+#   -X  don't clear the screen when pager quits
+## cmd = less -FRX
 """
 
 # True when debugging.
@@ -957,7 +966,7 @@ def setupPager():
             not config.getboolean("pager", "enabled"):
         return
 
-    pagerCmd = "less"
+    pagerCmd = "less -FRX"
     pagerCmd = getEnviron("PAGER", default=pagerCmd)
     try:
         pagerCmd = config.get("pager", "cmd")
@@ -967,7 +976,7 @@ def setupPager():
 
     global pager
     try:
-        pager = subprocess.Popen(pagerCmd, stdin=subprocess.PIPE)
+        pager = subprocess.Popen(shlex.split(pagerCmd), stdin=subprocess.PIPE)
     except OSError:
         # Pager is not setup correctly, or command is missing.  Let's just
         # move on.
