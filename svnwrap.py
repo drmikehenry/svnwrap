@@ -11,7 +11,6 @@ import difflib
 import platform
 import shutil
 import ConfigParser
-import shlex
 
 platformIsWindows = platform.system() == "Windows"
 
@@ -41,6 +40,12 @@ sampleIniContents = """
 #   -R  process color escape sequences
 #   -X  don't clear the screen when pager quits
 ## cmd = less -FRX
+#
+# You can also have a more complicated command, such as this:
+#   cmd = diff-highlight | less
+#
+# Where diff-highlight is a script to help highlight the differences when only a
+# few words change on a line.  Note: this script does not come with svnwrap.
 """
 
 # True when debugging.
@@ -976,7 +981,7 @@ def setupPager():
 
     global pager
     try:
-        pager = subprocess.Popen(shlex.split(pagerCmd), stdin=subprocess.PIPE)
+        pager = subprocess.Popen(pagerCmd, stdin=subprocess.PIPE, shell=True)
     except OSError:
         # Pager is not setup correctly, or command is missing.  Let's just
         # move on.
