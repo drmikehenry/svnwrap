@@ -12,6 +12,8 @@ import platform
 import shutil
 import ConfigParser
 import errno
+import atexit
+import signal
 
 platformIsWindows = platform.system() == "Windows"
 
@@ -1003,7 +1005,27 @@ def setupPager():
         # move on.
         return
 
-    sys.stdout = pager.stdin
+    # Create extra descriptors to the current stdout and stderr.
+    stdout = os.dup(sys.stdout.fileno())
+    stderr = os.dup(sys.stderr.fileno())
+
+    # Redirect stdout and stderr into the pager.
+    os.dup2(pager.stdin.fileno(), sys.stdout.fileno())
+    if sys.stderr.isatty():
+        os.dup2(pager.stdin.fileno(), sys.stderr.fileno())
+
+    @atexit.register
+    def killpager():
+        if hasattr(signal, "SIGINT"):
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        # Restore stdout and stderr to their original state.
+        os.dup2(stdout, sys.stdout.fileno())
+        os.dup2(stderr, sys.stderr.fileno())
+
+        # Wait for the pager to exit.
+        pager.stdin.close()
+        pager.wait()
 
 def main():
     # Arguments to "exectty" are unrelated to svnwrap arguments, so
@@ -1152,10 +1174,6 @@ def main():
         svnCall([cmd] + args)
 
     displayConflicts()
-
-    if pager:
-        pager.stdin.close()
-        pager.wait()
 
 def mainWithSvnErrorHandling():
     try:
