@@ -633,7 +633,7 @@ def svnGetUrl(path):
     try:
         infoDict = infoDictList[0]
         return infoDict["URL"]
-    except IndexError, KeyError:
+    except (IndexError, KeyError):
         raise SvnError("invalid subversion path %r" % path)
 
 def svnGetUrlSplit(path):
