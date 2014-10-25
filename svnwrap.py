@@ -33,13 +33,14 @@ sampleIniContents = """
 # Customize which pager to use (along with any desired arguments) via the "cmd"
 # setting here, or via the environment variable SVN_PAGER, or via the system
 # default specified in the PAGER environment variable.  If none of the above
-# are set, then "less -FRX" will be assumed.
+# are set, then "less -FKRX" will be assumed.
 #
 # Switches for "less":
 #   -F  quit the pager early if output fits on one screen
+#   -K  allow Ctrl-C to exit less
 #   -R  process color escape sequences
 #   -X  don't clear the screen when pager quits
-## cmd = less -FRX
+## cmd = less -FKRX
 #
 # You can also have a more complicated command, such as this:
 #   cmd = diff-highlight | less
@@ -971,7 +972,7 @@ def setupPager():
             not config.getboolean("pager", "enabled"):
         return
 
-    pagerCmd = "less -FRX"
+    pagerCmd = "less -FKRX"
     pagerCmd = getEnviron("PAGER", default=pagerCmd)
     try:
         pagerCmd = config.get("pager", "cmd")
