@@ -11,6 +11,7 @@ import difflib
 import platform
 import shutil
 import ConfigParser
+import errno
 
 platformIsWindows = platform.system() == "Windows"
 
@@ -60,6 +61,9 @@ def debugLn(s=""):
     debug(s + "\n")
 
 class SvnError(Exception):
+    pass
+
+class PagerClosed(Exception):
     pass
 
 def getEnviron(envVar, default=None):
@@ -270,8 +274,19 @@ def write(s, f=None):
         # until we need it.
         f = sys.stdout
 
-    f.write(s)
-    f.flush()
+    try:
+        f.write(s)
+        f.flush()
+    except IOError, e:
+        if e.errno != errno.EPIPE:
+            raise
+        raise PagerClosed("Pager pipe closed.")
+    except ValueError:
+        # If the pager pipe is closed (because someone exited it before we
+        # are finished reading off the data from Subversion), then we get a
+        # ValueError saying that we provided a bad output file.  Convert this
+        # to a PagerClosed exception.
+        raise PagerClosed("Pager pipe closed.")
 
 def writeLn(line=""):
     write(line + "\n")
@@ -1151,6 +1166,8 @@ def mainWithSvnErrorHandling():
     except SvnError, e:
         print "svnwrap: %s" % e
         sys.exit(1)
+    except PagerClosed:
+        pass
 
 def colorTest():
     for color in sorted(colorDict):
