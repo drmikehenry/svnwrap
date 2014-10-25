@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = "0.6.1"
+__VERSION__ = "0.6.2"
 
 import sys
 import re
@@ -1056,7 +1056,13 @@ def main():
     args = switchArgs + posArgs
 
     if cmd is None:
-        svnCall(args)
+        # No positional arguments were given.  Newer svn clients return failure
+        # for no arguments at all; in this case, just print the same message
+        # that ``svn`` would print without calling ``svn``.
+        if switchArgs:
+            svnCall(args)
+        else:
+            writeLn("Type 'svn help' for usage.")
         if "--version" in switchArgs:
             writeLn("svnwrap version %s" % __VERSION__)
         else:
