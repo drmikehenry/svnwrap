@@ -1069,10 +1069,12 @@ def main():
             helpWrap(summary=True)
 
     elif cmd == "help" and not args:
+        setupPager()
         svnCall(["help"])
         helpWrap(summary=True)
 
     elif cmd == "helpwrap":
+        setupPager()
         helpWrap(args)
 
     elif cmd == "st" or cmd == "stat" or cmd == "status":
