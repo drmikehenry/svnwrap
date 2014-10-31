@@ -297,16 +297,29 @@ def writeLines(lines):
     for line in lines:
         writeLn(line)
 
+def restoreSignals():
+    # Python sets up or ignores several signals by default.  This restores the
+    # default signal handling for the child process.
+    if hasattr(signal, 'SIGINT'):
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+    if hasattr(signal, 'SIGPIPE'):
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    if hasattr(signal, 'SIGXFZ'):
+        signal.signal(signal.SIGXFZ, signal.SIG_DFL)
+    if hasattr(signal, 'SIGXFSZ'):
+        signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
+
 def svnCall(args=[]):
     subprocessArgs = [SVN] + args
-    retCode = subprocess.call(subprocessArgs)
+    retCode = subprocess.call(subprocessArgs, preexec_fn=restoreSignals)
     if retCode != 0:
         raise SvnError("failing return code %d for external program:\n  %s" %
                 (retCode, " ".join(subprocessArgs)))
 
 def svnGen(args, regex=None):
     subprocessArgs = [SVN] + args
-    svn = subprocess.Popen(subprocessArgs, stdout=subprocess.PIPE)
+    svn = subprocess.Popen(
+            subprocessArgs, stdout=subprocess.PIPE, preexec_fn=restoreSignals)
     while 1:
         line = svn.stdout.readline()
         if line:
@@ -999,7 +1012,9 @@ def setupPager():
 
     global pager
     try:
-        pager = subprocess.Popen(pagerCmd, stdin=subprocess.PIPE, shell=True)
+        pager = subprocess.Popen(
+                pagerCmd, stdin=subprocess.PIPE, shell=True,
+                preexec_fn=restoreSignals)
     except OSError:
         # Pager is not setup correctly, or command is missing.  Let's just
         # move on.
