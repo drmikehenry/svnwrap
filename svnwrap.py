@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = "0.6.2"
+__VERSION__ = "0.6.3"
 
 import sys
 import re
@@ -11,6 +11,7 @@ import difflib
 import platform
 import shutil
 import ConfigParser
+import shlex
 import errno
 import atexit
 import signal
@@ -45,11 +46,14 @@ sampleIniContents = """
 #   -X  don't clear the screen when pager quits
 ## cmd = less -FKRX
 #
-# You can also have a more complicated command, such as this:
+# If "useShell" is true, svnwrap will feed "cmd" directly to the shell,
+# allowing more complicated commands such as this one (but note that the
+# "diff-highlight" command does not come with svnwrap):
 #   cmd = diff-highlight | less
 #
-# Where diff-highlight is a script to help highlight the differences when only a
-# few words change on a line.  Note: this script does not come with svnwrap.
+# **WARNING** If you enable this behavior, svnwrap will not be able to
+# detect failures of "cmd".
+## useShell = false
 """
 
 # True when debugging.
@@ -97,6 +101,12 @@ def svnwrapConfig():
     config = ConfigParser.SafeConfigParser()
     config.read(getSvnwrapIniPath())
     return config
+
+def configBoolean(config, section, option, defaultValue):
+    if config.has_option(section, option):
+        return config.getboolean("pager", "enabled")
+    else:
+        return defaultValue
 
 def getAliases():
     config = svnwrapConfig()
@@ -309,17 +319,30 @@ def restoreSignals():
     if hasattr(signal, 'SIGXFSZ'):
         signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
 
+def addRestoreSignals(kwargs):
+    # preexec_fn is not supported on Windows, but we want to use it to restore
+    # the signal handlers on other platforms.
+    if not platformIsWindows:
+        kwargs = kwargs.copy()
+        kwargs["preexec_fn"] = restoreSignals
+    return kwargs
+
+def subprocessCall(*args, **kwargs):
+    return subprocess.call(*args, **addRestoreSignals(kwargs))
+
+def subprocessPopen(*args, **kwargs):
+    return subprocess.Popen(*args, **addRestoreSignals(kwargs))
+
 def svnCall(args=[]):
     subprocessArgs = [SVN] + args
-    retCode = subprocess.call(subprocessArgs, preexec_fn=restoreSignals)
+    retCode = subprocessCall(subprocessArgs)
     if retCode != 0:
         raise SvnError("failing return code %d for external program:\n  %s" %
                 (retCode, " ".join(subprocessArgs)))
 
 def svnGen(args, regex=None):
     subprocessArgs = [SVN] + args
-    svn = subprocess.Popen(
-            subprocessArgs, stdout=subprocess.PIPE, preexec_fn=restoreSignals)
+    svn = subprocessPopen(subprocessArgs, stdout=subprocess.PIPE)
     while 1:
         line = svn.stdout.readline()
         if line:
@@ -997,24 +1020,26 @@ def setupPager():
         return
 
     config = svnwrapConfig()
-
-    if config.has_option("pager", "enabled") and \
-            not config.getboolean("pager", "enabled"):
-        return
-
+    enabled = configBoolean(config, "pager", "enabled", True)
+    useShell = configBoolean(config, "pager", "useShell", False)
     pagerCmd = "less -FKRX"
     pagerCmd = getEnviron("PAGER", default=pagerCmd)
-    try:
+    if config.has_option("pager", "cmd"):
         pagerCmd = config.get("pager", "cmd")
-    except ConfigParser.Error:
-        pass
     pagerCmd = getEnviron("SVN_PAGER", default=pagerCmd)
+
+    # If pager is disabled, nothing more to do.
+    if not enabled:
+        return
 
     global pager
     try:
-        pager = subprocess.Popen(
-                pagerCmd, stdin=subprocess.PIPE, shell=True,
-                preexec_fn=restoreSignals)
+        if useShell:
+            pager = subprocess.Popen(pagerCmd,
+                    stdin=subprocess.PIPE, shell=True)
+        else:
+            pager = subprocess.Popen(shlex.split(pagerCmd),
+                    stdin=subprocess.PIPE)
     except OSError:
         # Pager is not setup correctly, or command is missing.  Let's just
         # move on.
