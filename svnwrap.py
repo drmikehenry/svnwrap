@@ -104,7 +104,7 @@ def svnwrapConfig():
 
 def configBoolean(config, section, option, defaultValue):
     if config.has_option(section, option):
-        return config.getboolean("pager", "enabled")
+        return config.getboolean(section, option)
     else:
         return defaultValue
 
