@@ -246,7 +246,7 @@ if usingColor and platformIsWindows:
     try:
         import colorama
         colorama.init()
-    except ImportError, e:
+    except ImportError as e:
         usingColor = False
 
 if os.isatty(sys.stdout.fileno()):
@@ -309,7 +309,7 @@ def write(s, f=None):
     try:
         f.write(s)
         f.flush()
-    except IOError, e:
+    except IOError as e:
         if e.errno != errno.EPIPE:
             raise
         raise PagerClosed("Pager pipe closed.")
@@ -371,7 +371,7 @@ def svnCall(args=[]):
 def svnGen(args, regex=None):
     subprocessArgs = [SVN] + args
     svn = subprocessPopen(subprocessArgs, stdout=subprocess.PIPE)
-    while 1:
+    while True:
         line = svn.stdout.readline()
         if line:
             line = line.rstrip("\r\n")
@@ -1303,7 +1303,7 @@ def mainWithSvnErrorHandling():
     except KeyboardInterrupt:
         print "svnwrap: keyboard interrupt"
         sys.exit(1)
-    except SvnError, e:
+    except SvnError as e:
         print "svnwrap: %s" % e
         sys.exit(1)
     except PagerClosed:
