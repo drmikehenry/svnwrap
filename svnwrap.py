@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim:set fileencoding=utf8: #
 
-__VERSION__ = "0.6.4"
+__VERSION__ = "0.6.5"
 
 import sys
 import re
@@ -59,18 +59,23 @@ sampleIniContents = """
 # True when debugging.
 debugging = False
 
+
 def debug(s):
     if debugging:
         sys.stdout.write(s)
 
+
 def debugLn(s=""):
     debug(s + "\n")
+
 
 class SvnError(Exception):
     pass
 
+
 class PagerClosed(Exception):
     pass
+
 
 def getEnviron(envVar, default=None):
     try:
@@ -80,12 +85,14 @@ def getEnviron(envVar, default=None):
             raise SvnError("missing environment variable %s" % envVar)
         return default
 
+
 def getSvnwrapConfigDir():
     configHome = os.path.join(getEnviron("HOME", ""), ".config")
     if platformIsWindows:
         configHome = getEnviron("APPDATA", configHome)
     configHome = getEnviron("XDG_CONFIG_HOME", configHome)
     return os.path.join(configHome, "svnwrap")
+
 
 def getSvnwrapIniPath():
     configDir = getSvnwrapConfigDir()
@@ -97,16 +104,19 @@ def getSvnwrapIniPath():
             f.write(sampleIniContents)
     return iniPath
 
+
 def svnwrapConfig():
     config = ConfigParser.SafeConfigParser()
     config.read(getSvnwrapIniPath())
     return config
+
 
 def configBoolean(config, section, option, defaultValue):
     if config.has_option(section, option):
         return config.getboolean(section, option)
     else:
         return defaultValue
+
 
 def getAliases():
     config = svnwrapConfig()
@@ -116,6 +126,7 @@ def getAliases():
         aliases = {}
     return dict(aliases)
 
+
 def getSubversionConfigDir():
     if platformIsWindows:
         configDir = os.path.join(getEnviron("APPDATA", ""), "Subversion")
@@ -123,8 +134,10 @@ def getSubversionConfigDir():
         configDir = os.path.join(getEnviron("HOME", ""), ".subversion")
     return configDir
 
+
 def getSubversionIniPath():
     return os.path.join(getSubversionConfigDir(), "config")
+
 
 def subversionConfig():
     config = ConfigParser.SafeConfigParser()
@@ -133,7 +146,7 @@ def subversionConfig():
 
 STATUS_REX = r"^Performing status|^\s*$|^X[ \t]"
 UPDATE_REX = (r"^Fetching external|^External |^Updated external|^\s*$" +
-    r"|^At revision")
+              r"|^At revision")
 CHECKOUT_REX = (r"^Fetching external|^\s*$")
 
 SVN = "svn"
@@ -164,31 +177,32 @@ for i, baseName in enumerate(colorNames):
 '''
 
 colorScheme = {
-        "diffAdd": ["lightblue", None],
-        "diffRemoved": ["lightred", None],
-        "diffMisc": ["darkyellow", None],
-        "conflict": ["lightwhite", "darkred"],
-        "statusAdded": ["darkgreen", None],
-        "statusDeleted": ["darkred", None],
-        "statusUpdated": ["lightblue", None],
-        "statusConflict": ["lightwhite", "darkred"],
-        "statusModified": ["lightblue", None],
-        "statusMerged": ["darkmagenta", None],
-        "statusUntracked": ["lightblack", None],
-        "status": ["lightblack", None],
-        "info": ["darkgreen", None],
-        "logRev": ["lightyellow", None],
-        "logCommitter": ["lightblue", None],
-        "logDate": ["lightblack", None],
-        "logNumLines": ["lightblack", None],
-        "logFieldSeparator": ["lightblack", None],
-        "logSeparator": ["darkgreen", None],
-        "logText": ["darkwhite", None],
+    "diffAdd": ["lightblue", None],
+    "diffRemoved": ["lightred", None],
+    "diffMisc": ["darkyellow", None],
+    "conflict": ["lightwhite", "darkred"],
+    "statusAdded": ["darkgreen", None],
+    "statusDeleted": ["darkred", None],
+    "statusUpdated": ["lightblue", None],
+    "statusConflict": ["lightwhite", "darkred"],
+    "statusModified": ["lightblue", None],
+    "statusMerged": ["darkmagenta", None],
+    "statusUntracked": ["lightblack", None],
+    "status": ["lightblack", None],
+    "info": ["darkgreen", None],
+    "logRev": ["lightyellow", None],
+    "logCommitter": ["lightblue", None],
+    "logDate": ["lightblack", None],
+    "logNumLines": ["lightblack", None],
+    "logFieldSeparator": ["lightblack", None],
+    "logSeparator": ["darkgreen", None],
+    "logText": ["darkwhite", None],
 }
 
 entryNameToStyleName = {}
 for key in colorScheme:
     entryNameToStyleName[key.lower()] = key
+
 
 def readColorScheme():
     config = svnwrapConfig()
@@ -210,8 +224,8 @@ def readColorScheme():
             foreground, background = colors
         else:
             raise SvnError(
-                    "invalid number of colors specified for '%s' in config" % (
-                        key,))
+                "invalid number of colors specified for '%s' in config" % (
+                    key,))
 
         if foreground == "default":
             foreground = colorScheme[key][0]
@@ -243,11 +257,13 @@ else:
 # Will contain a subprocess.Popen object, if a pager is in use.
 pager = None
 
+
 def setColorNum(colorNum):
     if usingColor:
         return "\x1b[%dm" % colorNum
     else:
         return ""
+
 
 def setForeground(foreground):
     if foreground is None:
@@ -259,6 +275,7 @@ def setForeground(foreground):
         colorNum = 90 + (i - 8)
     return setColorNum(colorNum)
 
+
 def setBackground(background):
     if background is None:
         return ""
@@ -269,8 +286,10 @@ def setBackground(background):
         colorNum = 100 + (i - 8)
     return setColorNum(colorNum)
 
+
 def resetColors():
     return setColorNum(0)
+
 
 def wrapColor(s, style):
     foreground, background = colorScheme[style]
@@ -278,6 +297,7 @@ def wrapColor(s, style):
             setBackground(background) +
             s +
             resetColors())
+
 
 def write(s, f=None):
     if f is None:
@@ -300,12 +320,15 @@ def write(s, f=None):
         # to a PagerClosed exception.
         raise PagerClosed("Pager pipe closed.")
 
+
 def writeLn(line=""):
     write(line + "\n")
+
 
 def writeLines(lines):
     for line in lines:
         writeLn(line)
+
 
 def restoreSignals():
     # Python sets up or ignores several signals by default.  This restores the
@@ -319,6 +342,7 @@ def restoreSignals():
     if hasattr(signal, 'SIGXFSZ'):
         signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
 
+
 def addRestoreSignals(kwargs):
     # preexec_fn is not supported on Windows, but we want to use it to restore
     # the signal handlers on other platforms.
@@ -327,18 +351,22 @@ def addRestoreSignals(kwargs):
         kwargs["preexec_fn"] = restoreSignals
     return kwargs
 
+
 def subprocessCall(*args, **kwargs):
     return subprocess.call(*args, **addRestoreSignals(kwargs))
 
+
 def subprocessPopen(*args, **kwargs):
     return subprocess.Popen(*args, **addRestoreSignals(kwargs))
+
 
 def svnCall(args=[]):
     subprocessArgs = [SVN] + args
     retCode = subprocessCall(subprocessArgs)
     if retCode != 0:
         raise SvnError("failing return code %d for external program:\n  %s" %
-                (retCode, " ".join(subprocessArgs)))
+                       (retCode, " ".join(subprocessArgs)))
+
 
 def svnGen(args, regex=None):
     subprocessArgs = [SVN] + args
@@ -355,30 +383,37 @@ def svnGen(args, regex=None):
     retCode = svn.returncode
     if retCode != 0:
         raise SvnError("failing return code %d for external program:\n  %s" %
-                (retCode, " ".join(subprocessArgs)))
+                       (retCode, " ".join(subprocessArgs)))
+
 
 def svnGenCmd(cmd, args, regex=None):
     return svnGen([cmd] + args, regex)
+
 
 def svnRevert(args):
     svnCall(["revert"] + args)
 
 conflictingLines = []
+
+
 def addConflictLine(line):
     conflictingLines.append(line)
+
 
 def displayConflicts():
     if conflictingLines:
         writeLn(wrapColor("Total conflicts: %d" % len(conflictingLines),
-            "statusConflict"))
+                          "statusConflict"))
         for line in conflictingLines:
             writeLn(wrapColor(line, "statusConflict"))
+
 
 def splitStatus(statusLine):
     path = statusLine[7:]
     if path.startswith(" "):
         path = path[1:]
     return statusLine[:7], path
+
 
 def svnGenStatus(statusArgs, modified=False, namesOnly=False):
     for line in svnGenCmd("st", statusArgs, regex=STATUS_REX):
@@ -391,6 +426,7 @@ def svnGenStatus(statusArgs, modified=False, namesOnly=False):
         else:
             yield line
 
+
 def svnGenInfo(infoArgs):
     infoDict = {}
     for line in svnGenCmd("info", infoArgs):
@@ -401,11 +437,13 @@ def svnGenInfo(infoArgs):
             yield infoDict
             infoDict = {}
 
+
 def svnGenDiff(args, ignoreSpaceChange=False):
     cmd = ["diff"]
     if ignoreSpaceChange:
         cmd.extend(["-x", "-b"])
     return svnGen(cmd + args)
+
 
 def wrapDiffLines(gen):
     for line in gen:
@@ -418,9 +456,11 @@ def wrapDiffLines(gen):
             line = wrapColor(line, "diffMisc")
         yield line
 
+
 def writeDiffLines(gen):
     for line in wrapDiffLines(gen):
         writeLn(line)
+
 
 def wrapStatusLines(gen):
     for line in gen:
@@ -446,17 +486,20 @@ def wrapStatusLines(gen):
             line = wrapColor(line, "statusUntracked")
         yield line
 
+
 def writeStatusLines(gen):
     for line in wrapStatusLines(gen):
         writeLn(line)
+
 
 def writeUpdateLines(gen):
     for line in wrapStatusLines(gen):
         writeLn(line)
 
+
 def wrapLogLines(gen):
     logRe = re.compile(
-            r"^(r\d+) \| (.*) \| (.*) \| (\d+ lines?)$")
+        r"^(r\d+) \| (.*) \| (.*) \| (\d+ lines?)$")
     separatorLine = 72 * '-'
 
     for line in gen:
@@ -465,24 +508,27 @@ def wrapLogLines(gen):
             # Do stuff...
             fieldSeparator = wrapColor('|', "logFieldSeparator")
             line = "%s %s %s %s %s %s %s" % (
-                    wrapColor(m.group(1), "logRev"),
-                    fieldSeparator,
-                    wrapColor(m.group(2), "logCommitter"),
-                    fieldSeparator,
-                    wrapColor(m.group(3), "logDate"),
-                    fieldSeparator,
-                    wrapColor(m.group(4), "logNumLines"))
+                wrapColor(m.group(1), "logRev"),
+                fieldSeparator,
+                wrapColor(m.group(2), "logCommitter"),
+                fieldSeparator,
+                wrapColor(m.group(3), "logDate"),
+                fieldSeparator,
+                wrapColor(m.group(4), "logNumLines"))
             yield line
         elif line == separatorLine:
             yield wrapColor(line, "logSeparator")
         else:
             yield wrapColor(line, "logText")
 
+
 def writeLogLines(gen):
     for line in wrapLogLines(gen):
         writeLn(line)
 
+
 class ExtDiffer:
+
     def reset(self):
         self.propIndex = 0
         self.propLines = [[], []]
@@ -510,15 +556,16 @@ class ExtDiffer:
             extraLine = None
         if self.propLines[0] or self.propLines[1]:
             delta = difflib.unified_diff(
-                    self.propLines[0],
-                    self.propLines[1], n=0,
-                    fromfile="Old externals",
-                    tofile="New externals")
+                self.propLines[0],
+                self.propLines[1], n=0,
+                fromfile="Old externals",
+                tofile="New externals")
             for d in delta:
                 yield d
         self.reset()
         if extraLine is not None:
             yield extraLine
+
 
 def diffFilter(lines, ignoreSpaceChange=False):
     extDiffer = ExtDiffer(ignoreSpaceChange)
@@ -539,6 +586,7 @@ def diffFilter(lines, ignoreSpaceChange=False):
         for d in extDiffer.genDiffLines():
             yield d
 
+
 def commonPrefix(seq1, seq2, partsEqual=lambda part1, part2: part1 == part2):
     prefix = []
     for part1, part2 in zip(seq1, seq2):
@@ -548,18 +596,21 @@ def commonPrefix(seq1, seq2, partsEqual=lambda part1, part2: part1 == part2):
             break
     return prefix
 
+
 def pathsEqual(path1, path2):
     return os.path.normcase(path1) == os.path.normcase(path2)
+
 
 def relPath(wcPath, startDir="."):
     destPathParts = os.path.abspath(wcPath).split(os.sep)
     startDirParts = os.path.abspath(startDir).split(os.sep)
     commonPartsLen = len(commonPrefix(destPathParts, startDirParts,
-        pathsEqual))
+                                      pathsEqual))
     numDirectoriesUp = len(startDirParts) - commonPartsLen
     return os.path.normpath(os.path.join(
-            os.sep.join([os.pardir] * numDirectoriesUp),
-            os.sep.join(destPathParts[commonPartsLen:])))
+        os.sep.join([os.pardir] * numDirectoriesUp),
+        os.sep.join(destPathParts[commonPartsLen:])))
+
 
 def relWalk(top):
     for root, dirs, files in os.walk(top):
@@ -568,11 +619,13 @@ def relWalk(top):
                 dirs.remove(d)
         yield root, dirs, files
 
+
 def isSvnDir(path):
     return os.path.isdir(os.path.join(path, ".svn"))
 
+
 def svnMergeRaw(rawRoot, wcRoot):
-    ## @bug Cannot handle changing a file into a directory or vice-versa.
+    # @bug Cannot handle changing a file into a directory or vice-versa.
     if not os.path.isdir(rawRoot):
         print "not a directory: %r" % rawRoot
         return
@@ -620,8 +673,10 @@ def svnMergeRaw(rawRoot, wcRoot):
                 print "removing file %r" % rel
                 svnCall(["rm", wcPath])
 
+
 def getUser():
     return getEnviron("USER")
+
 
 def svnUrlSplitPeg(url):
     m = re.match(r"(.*)(@\d+)$", url)
@@ -630,6 +685,7 @@ def svnUrlSplitPeg(url):
     else:
         newUrl, peg = url, ""
     return newUrl, peg
+
 
 def svnUrlSplit(url):
     """Split into head, middle, tail.
@@ -653,6 +709,7 @@ def svnUrlSplit(url):
     else:
         return url, "", ""
 
+
 def svnUrlJoin(head, middle, tail=""):
     url = head
     middle = middle.strip("/")
@@ -668,16 +725,20 @@ def svnUrlJoin(head, middle, tail=""):
             url += "/" + tail
     return url
 
+
 def svnUrlSplitHead(url):
     head, middle, tail = svnUrlSplit(url)
     return head
+
 
 def svnUrlSplitTail(url):
     head, middle, tail = svnUrlSplit(url)
     return tail
 
+
 def isUrl(path):
     return re.match(r"\w+://", path) is not None
+
 
 def svnGetUrl(path):
     # If this is already a URL, return it unchanged.
@@ -690,14 +751,18 @@ def svnGetUrl(path):
     except (IndexError, KeyError):
         raise SvnError("invalid subversion path %r" % path)
 
+
 def svnGetUrlSplit(path):
     return svnUrlSplit(svnGetUrl(path))
+
 
 def svnGetUrlHead(url):
     return svnUrlSplitHead(svnGetUrl(url))
 
+
 def svnGetUrlTail(url):
     return svnUrlSplitTail(svnGetUrl(url))
+
 
 def svnUrlMap(url):
     debugLn("mapping %s" % repr(url))
@@ -752,10 +817,10 @@ def svnUrlMap(url):
                 url = svnUrlJoin(svnGetUrlHead(before), "tags/guests")
             elif key == "mb":
                 url = svnUrlJoin(svnGetUrlHead(before), "branches/guests/" +
-                        getUser())
+                                 getUser())
             elif key == "mt":
                 url = svnUrlJoin(svnGetUrlHead(before), "tags/guests/" +
-                        getUser())
+                                 getUser())
             elif key == "ws":
                 wsHead, wsMiddle, ignoredTail = svnGetUrlSplit(before)
                 if not wsMiddle:
@@ -810,11 +875,13 @@ for arg in zeroArgSwitches:
 for arg in oneArgSwitches:
     switchToArgCountMap[arg] = 1
 
+
 def getSwitchArgCount(s):
     try:
         return switchToArgCountMap[s]
     except KeyError:
         raise SvnError("invalid switch %r" % s)
+
 
 def urlMapArgs(cmd, posArgs):
     if cmd in "propset pset ps".split():
@@ -828,6 +895,7 @@ def urlMapArgs(cmd, posArgs):
         numUnmappablePosArgs = 0
     return (posArgs[:numUnmappablePosArgs] +
             [svnUrlMap(arg) for arg in posArgs[numUnmappablePosArgs:]])
+
 
 def adjustUrlForWcPath(url, wcPath):
     newUrl = url
@@ -846,6 +914,7 @@ def adjustUrlForWcPath(url, wcPath):
             writeLn("  (append %s to URL to avoid adjustment)" %
                     wrapColor("'/.'", "info"))
     return newUrl
+
 
 def helpWrap(args=[], summary=False):
     if summary:
@@ -930,6 +999,7 @@ For more details, see the README.rst file distributed with svnwrap.
 
 """.strip() % vars())
 
+
 def parseArgs():
     """Return (switchArgs, posArgs)."""
 
@@ -1001,6 +1071,7 @@ def parseArgs():
         sys.exit()
     return switchArgs, posArgs
 
+
 def setupSvnEditor():
     """Set SVN_EDITOR to "svnwrap exectty " + original editor settings."""
 
@@ -1014,6 +1085,7 @@ def setupSvnEditor():
         pass
     editor = getEnviron("SVN_EDITOR", default=editor)
     os.environ["SVN_EDITOR"] = sys.argv[0] + " exectty " + editor
+
 
 def setupPager():
     if not usePager:
@@ -1036,10 +1108,10 @@ def setupPager():
     try:
         if useShell:
             pager = subprocess.Popen(pagerCmd,
-                    stdin=subprocess.PIPE, shell=True)
+                                     stdin=subprocess.PIPE, shell=True)
         else:
             pager = subprocess.Popen(shlex.split(pagerCmd),
-                    stdin=subprocess.PIPE)
+                                     stdin=subprocess.PIPE)
     except OSError:
         # Pager is not setup correctly, or command is missing.  Let's just
         # move on.
@@ -1066,6 +1138,7 @@ def setupPager():
         # Wait for the pager to exit.
         pager.stdin.close()
         pager.wait()
+
 
 def main():
     # Arguments to "exectty" are unrelated to svnwrap arguments, so
@@ -1151,7 +1224,7 @@ def main():
     elif cmd in ["bdiff", "ebdiff"]:
         setupPager()
         writeDiffLines(diffFilter(svnGenDiff(args, ignoreSpaceChange=True),
-            ignoreSpaceChange=True))
+                                  ignoreSpaceChange=True))
 
     elif cmd in ["kdiff", "kdiff3"]:
         svnCall(["diff", "--diff-cmd", "kdiff3", "-x", "--qall"] + args)
@@ -1223,6 +1296,7 @@ def main():
 
     displayConflicts()
 
+
 def mainWithSvnErrorHandling():
     try:
         main()
@@ -1234,6 +1308,7 @@ def mainWithSvnErrorHandling():
         sys.exit(1)
     except PagerClosed:
         pass
+
 
 def colorTest():
     for color in sorted(colorDict):
