@@ -301,9 +301,9 @@ def wrapColor(s, style):
 
 def write(s, f=None):
     if f is None:
-        # We don't set f to sys.stdout as a default argument since a pager maybe
-        # launched and change the value of sys.stdout.  So we defer resolution
-        # until we need it.
+        # We don't set f to sys.stdout as a default argument since a pager
+        # maybe launched and change the value of sys.stdout.  So we defer
+        # resolution until we need it.
         f = sys.stdout
 
     try:
@@ -699,10 +699,11 @@ def svnUrlSplit(url):
 
     """
 
-    m = re.match(r"""
-            (?P<head> .*? /)
-            (?P<middle> trunk | (tags | branches) (/ guests / [^/@]+)? / [^/@]+)
-            (?P<tail> .*)
+    m = re.match(
+        r"""
+        (?P<head> .*? /)
+        (?P<middle> trunk | (tags | branches) (/ guests / [^/@]+)? / [^/@]+)
+        (?P<tail> .*)
         """, url, re.MULTILINE | re.VERBOSE)
     if m:
         return m.group("head"), m.group("middle"), m.group("tail")
