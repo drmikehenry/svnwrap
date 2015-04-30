@@ -19,7 +19,7 @@ setup(
             ],
         entry_points={
             'console_scripts': [
-                'svnwrap = svnwrap:mainWithSvnErrorHandling',
+                'svnwrap = svnwrap:main_with_svn_error_handling',
                 ],
             },
         description="Wrapper script for Subversion command-line client",
