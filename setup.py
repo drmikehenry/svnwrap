@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+import sys
+
+sys_version = tuple(sys.version_info[:2])
+min_version = (2, 6)
+if sys_version < min_version:
+    sys.exit('Python version %d.%d is too old; %d.%d or newer is required.' %
+             (sys_version + min_version))
 
 NAME = 'svnwrap'
 
@@ -25,7 +32,8 @@ setup(
     long_description=long_description,
     classifiers=[
         'Topic :: Software Development :: Version Control',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
     ],
