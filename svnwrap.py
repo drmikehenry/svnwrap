@@ -577,16 +577,28 @@ class ExtDiffer:
 def diff_filter(lines, ignore_space_change=False):
     ext_differ = ExtDiffer(ignore_space_change)
     in_ext = False
+    expecting_first_line = False
     for line in lines:
-        if in_ext and re.match(r'\w+:\s', line):
-            for d in ext_differ.gen_diff_lines():
-                yield d
-            in_ext = False
-        if not in_ext and re.match(r'(Name|Modified): svn:externals', line):
-            in_ext = True
+        if in_ext:
+            if re.match(r'\w+:\s', line):
+                for d in ext_differ.gen_diff_lines():
+                    yield d
+                yield line
+                in_ext = False
+            elif expecting_first_line and re.match(r'## .* ##$', line):
+                # Newer svn clients (1.7 and later) already perform
+                # line-by-line diff of svn:externals, detectable by the
+                # presence of a position indicator such as ``## -1 +1,2 ##``
+                # on the first line of the svn:externals output.
+                yield line
+                in_ext = False
+            else:
+                ext_differ.add_line(line)
+            expecting_first_line = False
+        elif re.match(r'(Name|Modified): svn:externals', line):
             yield line
-        elif in_ext:
-            ext_differ.add_line(line)
+            in_ext = True
+            expecting_first_line = True
         else:
             yield line
     if in_ext:

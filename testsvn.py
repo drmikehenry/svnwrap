@@ -93,6 +93,13 @@ six file:///home/mrhenr1/tmp/svn/repo/trunk/six
 # Extra line
 
 
+Modified: svn:externals
+## -1 +1,3 ##
++../comp0 comp0
+ ../comp comp
++../comp3 comp3
+Added: some_weird_property
++property_value goes here
 Index: testfile.txt
 ===================================================================
 --- testfile.txt        (revision 0)
