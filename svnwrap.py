@@ -966,6 +966,8 @@ mergeraw RAWPATH [WCPATH]
                   - merge raw (non-SVN) tree into working copy
 ee                - propedit svn:externals
 ei                - propedit svn:ignore
+pge               - propget svn:externals
+pgi               - propget svn:ignore
 url               - show URL as received from "svn info"
 helpwrap          - this help
 
@@ -1269,6 +1271,16 @@ def main():
         if not args:
             args.append('.')
         svn_call('propedit svn:ignore'.split() + args)
+
+    elif cmd == 'pge':
+        if not args:
+            args.append('.')
+        svn_call('propget svn:externals'.split() + args)
+
+    elif cmd == 'pgi':
+        if not args:
+            args.append('.')
+        svn_call('propget svn:ignore'.split() + args)
 
     elif cmd == 'url':
         if pos_args:
