@@ -107,5 +107,10 @@ Caveats
 License
 -------
 
-Svnwrap is available under the terms of the MIT license; see LICENSE file for
-more details.
+Svnwrap is available under the terms of the MIT license; see LICENSE.txt file
+for more details.
+
+Changes
+-------
+
+See the file CHANGES.txt for details on changes to svnwrap.

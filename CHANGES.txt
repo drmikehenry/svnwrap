@@ -1,0 +1,23 @@
+*******
+Changes
+*******
+
+Significant changes to svnwrap (newest changes first).
+
+Version 0.7.0
+=============
+
+- Add "pge" and "pgi" shortcuts to propget svn:externals and svn:ignores.
+
+- Support svn v1.7+ svn:externals diff format.
+
+  Newer svn clients now provide line-by-line diff output for changes to
+  svn:externals, so svnwrap now detects this case to prevent erroneous
+  formatting.
+
+- Port to run on both Python 2.x and 3.x, with 2.6 as the minimum supported
+  version of Python.
+
+- Format for PEP8 compliance.
+
+.. vim:set ft=rst:
