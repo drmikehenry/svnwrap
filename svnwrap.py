@@ -13,7 +13,7 @@ import errno
 import atexit
 import signal
 
-__VERSION__ = '0.7.0'
+__version__ = '0.7.0'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -996,7 +996,7 @@ If your editor isn't launching correctly, setup SVN_EDITOR.
 For more details, see the README.rst file distributed with svnwrap.
 
 """.strip() % dict(svnwrap_ini_path=get_svnwrap_ini_path(),
-                   version=__VERSION__))
+                   version=__version__))
 
 
 def parse_args():
@@ -1176,7 +1176,7 @@ def main():
         else:
             write_ln("Type 'svn help' for usage.")
         if '--version' in switch_args:
-            write_ln('svnwrap version %s' % __VERSION__)
+            write_ln('svnwrap version %s' % __version__)
         else:
             help_wrap(summary=True)
 

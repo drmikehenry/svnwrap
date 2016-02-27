@@ -103,3 +103,9 @@ Caveats
   will it check any system-wide configuration files.  To overcome this
   limitation, set the ``SVN_EDITOR`` environment variable to your preferred
   editor settings.
+
+License
+-------
+
+Svnwrap is available under the terms of the MIT license; see LICENSE file for
+more details.
