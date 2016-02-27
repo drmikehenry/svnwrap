@@ -43,7 +43,6 @@ setup(
     author='Michael Henry',
     author_email='drmikehenry@drmikehenry.com',
     license='MIT',
-    data_files=['LICENSE', 'README.rst'],
     packages=find_packages(),
     py_modules=[NAME],
     install_requires=[
