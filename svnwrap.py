@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import sys
 import re
@@ -9,11 +10,15 @@ import subprocess
 import difflib
 import platform
 import shutil
-import ConfigParser
+try:
+    import ConfigParser as configparser
+except ImportError:
+    import configparser
 import shlex
 import errno
 import atexit
 import signal
+import locale
 
 __version__ = '0.7.0'
 
@@ -107,7 +112,7 @@ def get_svnwrap_ini_path():
 
 
 def svnwrap_config():
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.SafeConfigParser()
     config.read(get_svnwrap_ini_path())
     return config
 
@@ -123,7 +128,7 @@ def get_aliases():
     config = svnwrap_config()
     try:
         aliases = config.items('aliases')
-    except ConfigParser.NoSectionError:
+    except configparser.NoSectionError:
         aliases = {}
     return dict(aliases)
 
@@ -141,7 +146,7 @@ def get_subversion_ini_path():
 
 
 def subversion_config():
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.SafeConfigParser()
     config.read(get_subversion_ini_path())
     return config
 
@@ -209,7 +214,7 @@ def read_color_scheme():
     config = svnwrap_config()
     try:
         configured_colors = dict(config.items('colors'))
-    except ConfigParser.NoSectionError:
+    except configparser.NoSectionError:
         configured_colors = {}
 
     valid_keys = set(color_scheme.keys())
@@ -370,12 +375,13 @@ def svn_call(args=[]):
 
 
 def svn_gen(args, regex=None):
+    encoding = locale.getpreferredencoding()
     subprocess_args = [SVN] + args
     svn = subprocess_popen(subprocess_args, stdout=subprocess.PIPE)
     while True:
         line = svn.stdout.readline()
         if line:
-            line = line.rstrip('\r\n')
+            line = line.decode(encoding).rstrip('\r\n')
             if regex is None or not re.search(regex, line):
                 yield line
         else:
@@ -1082,7 +1088,7 @@ def setup_svn_editor():
     editor = get_environ('VISUAL', default=editor)
     try:
         editor = config.get('helpers', 'editor-cmd')
-    except ConfigParser.Error:
+    except configparser.Error:
         pass
     editor = get_environ('SVN_EDITOR', default=editor)
     os.environ['SVN_EDITOR'] = sys.argv[0] + ' exectty ' + editor

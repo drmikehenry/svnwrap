@@ -11,7 +11,7 @@ if sys_version < min_version:
 
 NAME = 'svnwrap'
 
-for line in file(NAME + '.py'):
+for line in open(NAME + '.py'):
     if line.startswith('__version__'):
         __version__ = line.split("'")[1]
         break
@@ -34,6 +34,7 @@ setup(
         'Topic :: Software Development :: Version Control',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
     ],
