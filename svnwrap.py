@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import sys
 import re
 import os
@@ -626,13 +628,13 @@ def is_svn_dir(path):
 def svn_merge_raw(raw_root, wc_root):
     # @bug Cannot handle changing a file into a directory or vice-versa.
     if not os.path.isdir(raw_root):
-        print 'not a directory: %r' % raw_root
+        print('not a directory: %r' % raw_root)
         return
     if is_svn_dir(raw_root):
-        print 'cannot use Subversion working copy: %r' % raw_root
+        print('cannot use Subversion working copy: %r' % raw_root)
         return
     if not is_svn_dir(wc_root):
-        print 'not a Subversion working copy: %r' % wc_root
+        print('not a Subversion working copy: %r' % wc_root)
         return
     for root, dirs, files in rel_walk(raw_root):
         for d in dirs:
@@ -640,7 +642,7 @@ def svn_merge_raw(raw_root, wc_root):
             rel = rel_path(raw_path, raw_root)
             wc_path = os.path.join(wc_root, rel)
             if not os.path.isdir(wc_path):
-                print 'adding directory %r' % rel
+                print('adding directory %r' % rel)
                 shutil.copytree(raw_path, wc_path)
                 svn_call(['add', wc_path])
                 dirs.remove(d)
@@ -649,10 +651,10 @@ def svn_merge_raw(raw_root, wc_root):
             rel = rel_path(raw_path, raw_root)
             wc_path = os.path.join(wc_root, rel)
             already_added = os.path.isfile(wc_path)
-            print 'copying file %r' % rel
+            print('copying file %r' % rel)
             shutil.copyfile(raw_path, wc_path)
             if not already_added:
-                print 'adding file %r' % rel
+                print('adding file %r' % rel)
                 svn_call(['add', wc_path])
 
     for root, dirs, files in rel_walk(wc_root):
@@ -661,7 +663,7 @@ def svn_merge_raw(raw_root, wc_root):
             rel = rel_path(wc_path, wc_root)
             raw_path = os.path.join(raw_root, rel)
             if not os.path.isdir(raw_path):
-                print 'removing directory %r' % rel
+                print('removing directory %r' % rel)
                 svn_call(['rm', wc_path])
                 dirs.remove(d)
         for f in files:
@@ -669,7 +671,7 @@ def svn_merge_raw(raw_root, wc_root):
             rel = rel_path(wc_path, wc_root)
             raw_path = os.path.join(raw_root, rel)
             if not os.path.isfile(raw_path):
-                print 'removing file %r' % rel
+                print('removing file %r' % rel)
                 svn_call(['rm', wc_path])
 
 
@@ -1301,10 +1303,10 @@ def main_with_svn_error_handling():
     try:
         main()
     except KeyboardInterrupt:
-        print 'svnwrap: keyboard interrupt'
+        print('svnwrap: keyboard interrupt')
         sys.exit(1)
     except SvnError as e:
-        print 'svnwrap: %s' % e
+        print('svnwrap: %s' % e)
         sys.exit(1)
     except PagerClosed:
         pass
