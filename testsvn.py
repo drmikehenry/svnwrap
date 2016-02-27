@@ -2,12 +2,15 @@
 
 import sys
 
+
 def write(s):
     sys.stdout.write(s)
     sys.stdout.flush()
 
+
 def writeLn(s):
     write(s + '\n')
+
 
 def fakeStatus():
     write('''\
@@ -33,12 +36,13 @@ A      other/stuff.py
 M      other/goodStuff.py
 ''')
 
+
 def fakeUpdate():
     write('''\
 
 Fetching external
 
-External 
+External
 ?      svnwrap
 A      svnwrap/svnwrap.sh
 C      svnwrap/testsvn.py
@@ -46,9 +50,10 @@ G      svnwrap/merged.py
 A      other/stuff.py
 M      other/goodStuff.py
 Updated external
-          
+
 At revision 3.
 ''')
+
 
 def fakeSwitch():
     write('''\
@@ -56,10 +61,11 @@ A      svnwrap/svnwrap.sh
 C      svnwrap/testsvn.py
 G      svnwrap/merged.py
 D      other/stuff.py
-          
+
 At revision 2.
 Updated to revision 2.
 ''')
+
 
 def fakeDiff():
     write('''\
@@ -104,10 +110,12 @@ Name: svn:eol-style
 
 ''')
 
+
 def fakeRevert(args):
     writeLn("Reverting:")
     for f in args:
         writeLn("%r" % f)
+
 
 def fakeLog():
     write('''\
@@ -177,6 +185,7 @@ add foo
 ------------------------------------------------------------------------
 ''')
 
+
 def main():
     args = sys.argv[1:]
 
@@ -211,4 +220,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# vim:set fileencoding=utf8: #
-
-__VERSION__ = "0.6.6"
 
 import sys
 import re
@@ -15,6 +12,8 @@ import shlex
 import errno
 import atexit
 import signal
+
+__VERSION__ = "0.7.0"
 
 platform_is_windows = platform.system() == "Windows"
 
@@ -1224,8 +1223,8 @@ def main():
     elif cmd in ["bdiff", "ebdiff"]:
         setup_pager()
         write_diff_lines(diff_filter(svn_gen_diff(args,
-                                     ignore_space_change=True),
-                         ignore_space_change=True))
+                                                  ignore_space_change=True),
+                                     ignore_space_change=True))
 
     elif cmd in ["kdiff", "kdiff3"]:
         svn_call(["diff", "--diff-cmd", "kdiff3", "-x", "--qall"] + args)
