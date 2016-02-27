@@ -13,7 +13,7 @@ def writeLn(s):
 
 
 def fakeStatus():
-    write('''\
+    write("""\
 A      .
 ?      svnwrap.py
 Performing status
@@ -34,11 +34,11 @@ D      svnwrap/junkfile
 A      svnwrap/svnwrap.sh
 A      other/stuff.py
 M      other/goodStuff.py
-''')
+""")
 
 
 def fakeUpdate():
-    write('''\
+    write("""\
 
 Fetching external
 
@@ -52,11 +52,11 @@ M      other/goodStuff.py
 Updated external
 
 At revision 3.
-''')
+""")
 
 
 def fakeSwitch():
-    write('''\
+    write("""\
 A      svnwrap/svnwrap.sh
 C      svnwrap/testsvn.py
 G      svnwrap/merged.py
@@ -64,11 +64,11 @@ D      other/stuff.py
 
 At revision 2.
 Updated to revision 2.
-''')
+""")
 
 
 def fakeDiff():
-    write('''\
+    write("""\
 
 Property changes on: .
 ___________________________________________________________________
@@ -108,17 +108,17 @@ ___________________________________________________________________
 Name: svn:eol-style
    + native
 
-''')
+""")
 
 
 def fakeRevert(args):
-    writeLn("Reverting:")
+    writeLn('Reverting:')
     for f in args:
-        writeLn("%r" % f)
+        writeLn('%r' % f)
 
 
 def fakeLog():
-    write('''\
+    write("""\
 ------------------------------------------------------------------------
 r15 | committer | 2014-10-12 15:34:35 -0400 (Sun, 12 Oct 2014) | 4 lines
 
@@ -183,7 +183,7 @@ r1 | committer | 2014-10-11 04:42:10 -0400 (Sat, 11 Oct 2014) | 1 line
 
 add foo
 ------------------------------------------------------------------------
-''')
+""")
 
 
 def main():

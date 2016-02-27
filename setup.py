@@ -2,10 +2,10 @@
 
 from setuptools import setup, find_packages
 
-NAME = "svnwrap"
+NAME = 'svnwrap'
 
-for line in file(NAME + ".py"):
-    if line.startswith("__VERSION__"):
+for line in file(NAME + '.py'):
+    if line.startswith('__VERSION__'):
         exec line in globals()
         break
 
@@ -21,10 +21,10 @@ setup(
             'svnwrap = svnwrap:main_with_svn_error_handling',
         ],
     },
-    description="Wrapper script for Subversion command-line client",
-    keywords="svn subversion wrapper",
-    url="projects/svnwrap",
-    author="Michael Henry",
-    author_email="drmikehenry@drmikehenry.com",
+    description='Wrapper script for Subversion command-line client',
+    keywords='svn subversion wrapper',
+    url='projects/svnwrap',
+    author='Michael Henry',
+    author_email='drmikehenry@drmikehenry.com',
     zip_safe=True,
 )
