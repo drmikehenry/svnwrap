@@ -8,11 +8,11 @@ def write(s):
     sys.stdout.flush()
 
 
-def writeLn(s):
+def write_ln(s):
     write(s + '\n')
 
 
-def fakeStatus():
+def fake_status():
     write("""\
 A      .
 ?      svnwrap.py
@@ -37,7 +37,7 @@ M      other/goodStuff.py
 """)
 
 
-def fakeUpdate():
+def fake_update():
     write("""\
 
 Fetching external
@@ -55,7 +55,7 @@ At revision 3.
 """)
 
 
-def fakeSwitch():
+def fake_switch():
     write("""\
 A      svnwrap/svnwrap.sh
 C      svnwrap/testsvn.py
@@ -67,7 +67,7 @@ Updated to revision 2.
 """)
 
 
-def fakeDiff():
+def fake_diff():
     write("""\
 
 Property changes on: .
@@ -111,13 +111,13 @@ Name: svn:eol-style
 """)
 
 
-def fakeRevert(args):
-    writeLn('Reverting:')
+def fake_revert(args):
+    write_ln('Reverting:')
     for f in args:
-        writeLn('%r' % f)
+        write_ln('%r' % f)
 
 
-def fakeLog():
+def fake_log():
     write("""\
 ------------------------------------------------------------------------
 r15 | committer | 2014-10-12 15:34:35 -0400 (Sun, 12 Oct 2014) | 4 lines
@@ -195,28 +195,28 @@ def main():
         cmd = ''
 
     if cmd in ['st', 'status']:
-        fakeStatus()
+        fake_status()
 
     elif cmd in ['up', 'update']:
-        fakeUpdate()
+        fake_update()
 
     elif cmd in ['sw', 'switch']:
-        fakeSwitch()
+        fake_switch()
 
     elif cmd == 'diff':
-        fakeDiff()
+        fake_diff()
 
     elif cmd == 'revert':
-        fakeRevert(args)
+        fake_revert(args)
 
     elif cmd == 'log':
-        fakeLog()
+        fake_log()
 
     elif cmd == '':
-        writeLn("Type 'svn help' for usage.")
+        write_ln("Type 'svn help' for usage.")
 
     else:
-        writeLn('testsvn uknown command: svn %s %s' % (cmd, ' '.join(args)))
+        write_ln('testsvn uknown command: svn %s %s' % (cmd, ' '.join(args)))
 
 if __name__ == '__main__':
     main()
