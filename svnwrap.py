@@ -20,6 +20,7 @@ import atexit
 import signal
 import locale
 import textwrap
+import threading
 
 __version__ = '0.7.0'
 
@@ -204,6 +205,7 @@ color_scheme = {
     'logFieldSeparator': ['lightblack', None],
     'logSeparator': ['darkgreen', None],
     'logText': ['darkwhite', None],
+    'warning': ['lightwhite', 'darkred'],
 }
 
 entry_name_to_style_name = {}
@@ -337,6 +339,13 @@ def write_lines(lines):
         write_ln(line)
 
 
+warning_lines = []
+
+
+def add_warning_line(line):
+    warning_lines.append(line)
+
+
 def restore_signals():
     # Python sets up or ignores several signals by default.  This restores the
     # default signal handling for the child process.
@@ -375,18 +384,30 @@ def svn_call(args=[]):
                        (ret_code, ' '.join(subprocess_args)))
 
 
-def svn_gen(args, regex=None):
+def line_gen(bytestream):
     encoding = locale.getpreferredencoding()
+    for encoded_line in bytestream:
+        yield encoded_line.decode(encoding).rstrip('\r\n')
+
+
+def svn_gen(args, regex=None):
     subprocess_args = [SVN] + args
-    svn = subprocess_popen(subprocess_args, stdout=subprocess.PIPE)
-    while True:
-        line = svn.stdout.readline()
-        if line:
-            line = line.decode(encoding).rstrip('\r\n')
-            if regex is None or not re.search(regex, line):
-                yield line
-        else:
-            break
+    svn = subprocess_popen(subprocess_args,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+
+    def read_stderr(stderr):
+        for line in line_gen(stderr):
+            add_warning_line(line)
+            sys.stderr.write('%s\n' % line)
+
+    t = threading.Thread(target=read_stderr, args=(svn.stderr,))
+    t.daemon = True
+    t.start()
+    for line in line_gen(svn.stdout):
+        if regex is None or not re.search(regex, line):
+            yield line
+    t.join()
     svn.wait()
     ret_code = svn.returncode
     if ret_code != 0:
@@ -401,6 +422,7 @@ def svn_gen_cmd(cmd, args, regex=None):
 def svn_revert(args):
     svn_call(['revert'] + args)
 
+
 conflicting_lines = []
 
 
@@ -408,12 +430,17 @@ def add_conflict_line(line):
     conflicting_lines.append(line)
 
 
-def display_conflicts():
+def display_notifications():
     if conflicting_lines:
         write_ln(wrap_color('Total conflicts: %d' % len(conflicting_lines),
                             'statusConflict'))
         for line in conflicting_lines:
             write_ln(wrap_color(line, 'statusConflict'))
+    if warning_lines:
+        write_ln(wrap_color('Total svn warnings: %d' % len(warning_lines),
+                            'warning'))
+        for line in warning_lines:
+            write_ln(wrap_color(line, 'warning'))
 
 
 def split_status(status_line):
@@ -1354,20 +1381,22 @@ def main():
     else:
         svn_call([cmd] + args)
 
-    display_conflicts()
-
 
 def main_with_svn_error_handling():
+    exit_status = 0
     try:
         main()
     except KeyboardInterrupt:
-        print('svnwrap: keyboard interrupt')
-        sys.exit(1)
+        add_warning_line('svnwrap: keyboard interrupt')
+        exit_status = 1
     except SvnError as e:
-        print('svnwrap: %s' % e)
-        sys.exit(1)
+        add_warning_line('svnwrap: %s' % e)
+        exit_status = 1
     except PagerClosed:
         pass
+    finally:
+        display_notifications()
+    sys.exit(exit_status)
 
 
 def color_test():

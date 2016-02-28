@@ -88,21 +88,21 @@ skeleton.
 Caveats
 -------
 
-- On occasion, the ``svn`` client needs to invoke an editor (e.g., when
-  encountering a merge conflict).  Normally this works fine because the stdout
-  of ``svn`` is connected to a terminal.  But to created prettied output,
-  svnwrap uses a pipe to capture stdout from ``svn``, which makes some editors
-  unable to function correctly.  To work around this problem, svnwrap tries to
-  determine which editor ``svn`` would invoke, then it sets the ``SVN_EDITOR``
-  environment variable to point to itself.  When ``svn`` launches the editor
-  specified by this updated variable, svnwrap duplicates the stderr file
-  descriptor (which should still be connected to the terminal) onto stdout, then
-  executes the original editor.  Svnwrap looks in most of the places where an
-  editor might be configured, but it checks only per-user environment variables
-  and config files.  It will not check any registry settings on Windows, nor
-  will it check any system-wide configuration files.  To overcome this
-  limitation, set the ``SVN_EDITOR`` environment variable to your preferred
-  editor settings.
+- On occasion, the ``svn`` client needs to invoke an editor (e.g., to provide a
+  commit message).  Without svnwrap, this works fine because the stdout and
+  stderr of ``svn`` are connected to a terminal.  But to created prettied output
+  and to capture error messages, svnwrap uses pipes to capture stdout and stderr
+  from ``svn``, which makes some console-based editors unable to function
+  correctly.  To work around this problem, svnwrap tries to determine which
+  editor ``svn`` would invoke, then it sets the ``SVN_EDITOR`` environment
+  variable to run some Python code before invoking the original editor.  When
+  ``svn`` executes this code, stdout and stderr are first reconnected to the
+  console, then the original editor is invoked.  Svnwrap looks in most of the
+  places where an editor might be configured, but it checks only per-user
+  environment variables and config files.  It will not check any registry
+  settings on Windows, nor will it check any system-wide configuration files.
+  To overcome this limitation, set the ``SVN_EDITOR`` environment variable to
+  your preferred editor settings.
 
 License
 -------
