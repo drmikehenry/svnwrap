@@ -19,6 +19,7 @@ import errno
 import atexit
 import signal
 import locale
+import textwrap
 
 __version__ = '0.7.0'
 
@@ -1094,7 +1095,7 @@ def parse_args():
 
 
 def setup_svn_editor():
-    """Set SVN_EDITOR to "svnwrap exectty " + original editor settings."""
+    """Set SVN_EDITOR to restore stdout/stderr and chain to original editor."""
 
     config = subversion_config()
     editor = 'vi'
@@ -1105,7 +1106,48 @@ def setup_svn_editor():
     except configparser.Error:
         pass
     editor = get_environ('SVN_EDITOR', default=editor)
-    os.environ['SVN_EDITOR'] = sys.argv[0] + ' exectty ' + editor
+    python = sys.executable or 'python'
+    if ' ' in python:
+        # You cannot quote the SVN_EDITOR program on Windows for some reason,
+        # despite claims to the contrary in the manual.  For example, when
+        # using svn 1.9.2 on Windows, the following fails:
+        #
+        #   mkdir "c:\with spaces"
+        #   copy c:\windows\notepad.exe "c:\with spaces"
+        #   set SVN_EDITOR="c:\with spaces\notepad.exe"
+        #   svn propedit svn:externals .
+        #
+        # This should launch notepad.exe from the "c:\with spaces" directory,
+        # but it fails to launch anything.  It also fails to quote the path
+        # to notepad.exe even when there are no spaces:
+        #
+        #   set SVN_EDITOR="c:\windows\notepad.exe"
+        #   svn propedit svn:externals .
+        #
+        # Without the quotes, it works fine:
+        #
+        #   set SVN_EDITOR=c:\windows\notepad.exe
+        #   svn propedit svn:externals .
+        #
+        # Therefore, if the Python interpreter on Windows lives in a path with
+        # spaces, it must be on the system PATH.  On other systems, quote the
+        # interpreter to protect the spaces.
+        if platform_is_windows:
+            python = 'python'
+        else:
+            python = '"%s"' % python
+    # Choose platform-specific device to open for access to the console.
+    console_dev = 'CON:' if platform_is_windows else '/dev/tty'
+    s = textwrap.dedent(r"""
+        %(python)s -c "import os, subprocess, sys;
+        console_fd = os.open(\"%(console_dev)s\", os.O_WRONLY);
+        os.dup2(console_fd, 1);
+        os.dup2(console_fd, 2);
+        os.close(console_fd);
+        sys.exit(subprocess.call(sys.argv[1:]))
+        " %(editor)s
+    """) % locals()
+    os.environ['SVN_EDITOR'] = ''.join(s.strip().splitlines())
 
 
 def setup_pager():
@@ -1162,24 +1204,10 @@ def setup_pager():
 
 
 def main():
-    # Arguments to "exectty" are unrelated to svnwrap arguments, so
-    # handle this subcommand specially.
-    args = sys.argv[1:]
-    if args and args[0] == 'exectty':
-        cmd = args.pop(0)
-        if cmd == 'exectty':
-            if not args:
-                raise SvnError('missing arguments for exectty')
-
-            # Force stdout to be the same as stderr, then exec args.
-            os.dup2(2, 1)
-            os.execvp(args[0], args)
-
-    setup_svn_editor()
-
     # Ensure config file exists.
     svnwrap_config()
     read_color_scheme()
+    setup_svn_editor()
 
     switch_args, pos_args = parse_args()
     if pos_args:
