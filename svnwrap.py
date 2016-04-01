@@ -22,7 +22,7 @@ import locale
 import textwrap
 import threading
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -1330,7 +1330,7 @@ def main():
     elif cmd == 'pge':
         if not args:
             args.append('.')
-        svn_call('propget svn:externals'.split() + args)
+        svn_call('propget svn:externals --strict'.split() + args)
 
     elif cmd == 'pgi':
         if not args:

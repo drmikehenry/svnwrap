@@ -4,6 +4,11 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.1
+=============
+
+- Add ``--strict`` to ``svn pge`` to avoid the spurious extra newline.
+
 Version 0.7.0
 =============
 
