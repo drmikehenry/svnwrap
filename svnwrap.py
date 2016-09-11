@@ -1042,6 +1042,9 @@ commands, such that the following would be equivalent:
   svn switch ^/branches/somebranch/comp
   svn switch ^/branches/somebranch
 
+NOTE: To avoid URL adjustment, append "/." to the end of the URL, e.g.:
+  svn switch ^/branches/somebranch/.
+
 If your editor isn't launching correctly, setup SVN_EDITOR.
 For more details, see the README.rst file distributed with svnwrap.
 
