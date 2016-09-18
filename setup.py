@@ -44,7 +44,7 @@ setup(
         'Development Status :: 5 - Production/Stable',
     ],
     keywords='svn subversion wrapper',
-    url='projects/svnwrap',
+    url='https://github.com/drmikehenry/svnwrap',
     author='Michael Henry',
     author_email='drmikehenry@drmikehenry.com',
     license='MIT',
