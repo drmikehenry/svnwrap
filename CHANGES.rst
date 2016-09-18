@@ -4,6 +4,19 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.2
+=============
+
+- Document how to avoid URL adjustment (add ``/.`` to the end of the URL).
+
+- Publish testsvn.py in the distribution.
+
+- Provide initial support for Travis CI using py.test.
+
+- Rename CHANGES.txt to CHANGES.rst, and LICENSE.txt to LICENSE.rst.
+
+- Include Makefile and requirements.txt in MANIFEST.in.
+
 Version 0.7.1
 =============
 
