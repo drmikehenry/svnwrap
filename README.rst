@@ -1,6 +1,18 @@
 Svnwrap - a wrapper script for Subversion
 =========================================
 
+.. image:: https://travis-ci.org/drmikehenry/svnwrap.svg
+    :target: https://travis-ci.org/drmikehenry/svnwrap
+
+.. image:: https://img.shields.io/pypi/v/svnwrap.svg
+    :target: https://pypi.python.org/pypi/svnwrap
+
+.. image:: https://img.shields.io/pypi/status/svnwrap.svg
+    :target: https://pypi.python.org/pypi/svnwrap
+
+.. image:: https://img.shields.io/pypi/pyversions/svnwrap.svg
+    :target: https://pypi.python.org/pypi/svnwrap/
+
 Svnwrap extends the functionality of svn, the command-line interface for the
 Subversion version control system.  Typically, the user will define a shell
 alias for ``svn`` that invokes ``svnwrap``.  In this way, operations like ``svn
