@@ -18,18 +18,11 @@ for line in open(NAME + '.py'):
 
 description = 'Wrapper script for Subversion command-line client',
 
-long_description = """\
-Svnwrap extends the functionality of svn, the command-line interface for the
-Subversion version control system.  Extensions provide for simplified syntax,
-color highlighting, suppression of "noisy" output, and abbreviations for
-common commands and URL manipulations.
-"""
-
 setup(
     name=NAME,
     version=__version__,
     description=description,
-    long_description=long_description,
+    long_description=open('README.rst').read(),
     classifiers=[
         'Topic :: Software Development :: Version Control',
         'Environment :: Console',
