@@ -16,7 +16,7 @@ for line in open(NAME + '.py'):
         __version__ = line.split("'")[1]
         break
 
-description = 'Wrapper script for Subversion command-line client',
+description = 'Wrapper script for Subversion command-line client'
 
 setup(
     name=NAME,

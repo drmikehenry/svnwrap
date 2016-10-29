@@ -4,6 +4,11 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.4
+=============
+
+- Remove stray comma in description string in setup.py.
+
 Version 0.7.3
 =============
 
