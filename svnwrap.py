@@ -22,7 +22,7 @@ import locale
 import textwrap
 import threading
 
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 
 platform_is_windows = platform.system() == 'Windows'
 

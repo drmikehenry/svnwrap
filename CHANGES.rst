@@ -4,6 +4,15 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.3
+=============
+
+- Add Travis and PyPI badges to README (thanks to John Hagen).
+
+- Allow full README to be shown on PyPI (thanks to John Hagen).
+
+- Remove Python nightly version from Travis build (thanks to John Hagen).
+
 Version 0.7.2
 =============
 
