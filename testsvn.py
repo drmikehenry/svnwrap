@@ -223,7 +223,7 @@ def main():
         write_ln("Type 'svn help' for usage.")
 
     else:
-        write_ln('testsvn uknown command: svn %s %s' % (cmd, ' '.join(args)))
+        write_ln('testsvn unknown command: svn %s %s' % (cmd, ' '.join(args)))
 
 if __name__ == '__main__':
     main()
