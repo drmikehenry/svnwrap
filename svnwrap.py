@@ -376,7 +376,9 @@ def subprocess_popen(*args, **kwargs):
     return subprocess.Popen(*args, **add_restore_signals(kwargs))
 
 
-def svn_call(args=[]):
+def svn_call(args=None):
+    if args is None:
+        args = []
     subprocess_args = [SVN] + args
     ret_code = subprocess_call(subprocess_args)
     if ret_code != 0:
