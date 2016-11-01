@@ -964,7 +964,7 @@ def adjust_url_for_wc_path(url, wc_path):
     return new_url
 
 
-def help_wrap(args=[], summary=False):
+def help_wrap(summary=False):
     if summary:
         write("""
 Type 'svn helpwrap' for help on svnwrap extensions.
@@ -1267,7 +1267,7 @@ def main():
 
     elif cmd == 'helpwrap':
         setup_pager()
-        help_wrap(args)
+        help_wrap()
 
     elif cmd == 'st' or cmd == 'stat' or cmd == 'status':
         write_status_lines(svn_gen_status(args))
