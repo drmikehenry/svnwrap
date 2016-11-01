@@ -155,7 +155,7 @@ def subversion_config():
 STATUS_REX = r'^Performing status|^\s*$|^X[ \t]'
 UPDATE_REX = (r'^Fetching external|^External |^Updated external|^\s*$' +
               r'|^At revision')
-CHECKOUT_REX = (r'^Fetching external|^\s*$')
+CHECKOUT_REX = r'^Fetching external|^\s*$'
 
 SVN = 'svn'
 
