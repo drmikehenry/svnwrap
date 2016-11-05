@@ -1076,9 +1076,11 @@ def parse_args():
         elif arg == '--debug':
             global debugging
             debugging = True
-        elif arg == '--test':
+        elif arg == '--svn':
             global SVN
-            SVN = './testsvn.py'
+            if not args:
+                raise SvnError('missing argument for switch %s' % arg)
+            SVN = os.path.abspath(args.pop(0))
         elif arg == '--color':
             global using_color
             if args:
