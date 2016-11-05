@@ -977,31 +977,163 @@ def svn_url_map(url):
     return url
 
 subcommands = set("""
-? add ann annotate blame cat changelist checkout ci cl cleanup co commit copy
-cp del delete di diff export h help import info list lock log ls merge
-mergeinfo mkdir move mv patch pd pdel pe pedit pg pget pl plist praise propdel
-propedit propget proplist propset ps pset relocate remove ren rename resolve
-resolved revert rm st stat status sw switch unlock up update upgrade
+?
+add
+ann
+annotate
+blame
+cat
+changelist
+checkout
+ci
+cl
+cleanup
+co
+commit
+copy
+cp
+del
+delete
+di
+diff
+export
+h
+help
+import
+info
+list
+lock
+log
+ls
+merge
+mergeinfo
+mkdir
+move
+mv
+patch
+pd
+pdel
+pe
+pedit
+pg
+pget
+pl
+plist
+praise
+propdel
+propedit
+propget
+proplist
+propset
+ps
+pset
+relocate
+remove
+ren
+rename
+resolve
+resolved
+revert
+rm
+st
+stat
+status
+sw
+switch
+unlock
+up
+update
+upgrade
 """.split())
 
 zero_arg_switches = set("""
---allow-mixed-revisions --auto-props --diff --dry-run --force --force-log
---git --help --ignore-ancestry --ignore-externals --ignore-keywords
---ignore-whitespace --incremental --internal-diff --keep-changelists
---keep-local --no-auth-cache --no-auto-props --no-diff-deleted --no-ignore
---no-unlock --non-interactive --non-recursive --notice-ancestry --parents
---quiet --record-only --recursive --reintegrate --relocate --remove
---reverse-diff --revprop --show-copies-as-adds --show-updates --stop-on-copy
---strict --summarize --trust-server-cert
---use-merge-history --version --verbose --with-all-revprops
---with-no-revprops --xml -?  -N -R -g -q -u -v
+--allow-mixed-revisions
+--auto-props
+--diff
+--dry-run
+--force
+--force-log
+--git
+--help
+--ignore-ancestry
+--ignore-externals
+--ignore-keywords
+--ignore-whitespace
+--incremental
+--internal-diff
+--keep-changelists
+--keep-local
+--no-auth-cache
+--no-auto-props
+--no-diff-deleted
+--no-ignore
+--no-unlock
+--non-interactive
+--non-recursive
+--notice-ancestry
+--parents
+--quiet
+--record-only
+--recursive
+--reintegrate
+--relocate
+--remove
+--reverse-diff
+--revprop
+--show-copies-as-adds
+--show-updates
+--stop-on-copy
+--strict
+--summarize
+--trust-server-cert
+--use-merge-history
+--verbose
+--version
+--with-all-revprops
+--with-no-revprops
+--xml
+-?
+-N
+-R
+-g
+-q
+-u
+-v
 """.split())
 
 one_arg_switches = set("""
---accept --change --changelist --cl --config-dir --config-option --depth
---diff-cmd --diff3-cmd --editor-cmd --encoding --extensions --file --limit
---message --native-eol --new --old --password --revision --set-depth
---show-revs --strip --targets --username --with-revprop -F -c -l -m -r -x
+--accept
+--change
+--changelist
+--cl
+--config-dir
+--config-option
+--depth
+--diff-cmd
+--diff3-cmd
+--editor-cmd
+--encoding
+--extensions
+--file
+--limit
+--message
+--native-eol
+--new
+--old
+--password
+--revision
+--set-depth
+--show-revs
+--strip
+--targets
+--username
+--with-revprop
+-F
+-c
+-l
+-m
+-r
+-x
 """.split())
 
 switch_to_arg_count_map = {}
