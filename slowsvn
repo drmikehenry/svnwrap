@@ -1,0 +1,8 @@
+#!/bin/bash
+
+svn "$@" | while read line; do
+    sleep .1
+    printf '%s\n' "$line"
+done
+
+exit ${PIPESTATUS[0]}
