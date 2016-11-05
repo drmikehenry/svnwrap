@@ -35,7 +35,7 @@ elif sys.version_info < (3, 2):
 else:
     from configparser import ConfigParser
 
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -992,7 +992,7 @@ zero_arg_switches = set("""
 --no-unlock --non-interactive --non-recursive --notice-ancestry --parents
 --quiet --record-only --recursive --reintegrate --relocate --remove
 --reverse-diff --revprop --show-copies-as-adds --show-updates --stop-on-copy
---strict --strict option to disabl --summarize --trust-server-cert
+--strict --summarize --trust-server-cert
 --use-merge-history --version --verbose --with-all-revprops
 --with-no-revprops --xml -?  -N -R -g -q -u -v
 """.split())
