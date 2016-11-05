@@ -4,6 +4,11 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.5
+=============
+
+- Incorporate several code cleanups (thanks to John Hagen).
+
 Version 0.7.4
 =============
 
