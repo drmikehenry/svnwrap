@@ -15,6 +15,11 @@ Version 0.7.6
   too early (e.g., when choosing the "diff-full" operation, the menu is
   redisplayed first followed by the actual diff output, leading to confusion).
 
+- Change to unbuffered method of reading the "svn" client subprocess's output
+  and error streams to provide realtime output display.
+
+- Display total number of stderr characters instead of repeating all of stderr.
+
 Version 0.7.5
 =============
 

@@ -3,22 +3,28 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
-import re
-import os
-import subprocess
-import difflib
-import platform
-import shutil
+import atexit
+import codecs
 try:
     import ConfigParser as configparser
 except ImportError:
     import configparser
-import shlex
+import difflib
 import errno
-import atexit
-import signal
+import io
 import locale
+import os
+import platform
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+import re
+import shlex
+import shutil
+import signal
+import subprocess
+import sys
 import textwrap
 import threading
 
@@ -353,6 +359,13 @@ def add_warning_line(line):
     warning_lines.append(line)
 
 
+stderr_parts = []
+
+
+def add_stderr_text(text):
+    stderr_parts.append(text)
+
+
 def restore_signals():
     # Python sets up or ignores several signals by default.  This restores the
     # default signal handling for the child process.
@@ -393,10 +406,68 @@ def svn_call(args=None):
                        (ret_code, ' '.join(subprocess_args)))
 
 
-def line_gen(bytestream):
-    encoding = locale.getpreferredencoding()
-    for encoded_line in bytestream:
-        yield encoded_line.decode(encoding).rstrip('\r\n')
+def line_gen(path_or_fd, partial_line_timeout=0.2, encoding=None):
+    if encoding is None:
+        encoding = locale.getpreferredencoding()
+    decoder = codecs.getincrementaldecoder(encoding)()
+    input_io = io.open(path_or_fd, 'rb', closefd=False, buffering=0)
+    raw_bytes_queue = queue.Queue(10)
+
+    def read_into_queue(input_io, input_queue):
+        block_size = 8192
+        while True:
+            raw_bytes = input_io.read(block_size)
+            input_queue.put(raw_bytes)
+            if not raw_bytes:
+                break
+
+    io_thread = threading.Thread(
+        target=read_into_queue, args=(input_io, raw_bytes_queue))
+    io_thread.daemon = True
+    io_thread.start()
+
+    line_fragments = []
+    while True:
+        if line_fragments:
+            timeout = partial_line_timeout
+            if timeout <= 0.0:
+                timeout = None
+        else:
+            timeout = None
+        try:
+            raw_bytes = raw_bytes_queue.get(timeout=timeout)
+        except queue.Empty:
+            # Timed out; yield the partial line.
+            yield ''.join(line_fragments)
+            line_fragments = []
+        else:
+            if not raw_bytes:
+                # Empty bytes indicates end-of-file.
+                break
+            text = decoder.decode(raw_bytes)
+            line_fragments.append(text)
+            if '\n' in text:
+                joined_text = ''.join(line_fragments)
+                line_fragments = []
+                for line in joined_text.splitlines(True):
+                    if line.endswith('\n'):
+                        yield line
+                    else:
+                        # Only the final line may lack a '\n'.
+                        # Save this partial line for later.
+                        line_fragments.append(line)
+
+    io_thread.join()
+    input_io.close()
+    remainder = ''.join(line_fragments)
+    if remainder:
+        yield remainder
+
+
+def read_stderr(stderr):
+    for line in line_gen(stderr.fileno()):
+        add_stderr_text(line)
+        write(wrap_color(line, 'warning'), sys.stderr)
 
 
 def svn_gen(args, regex=None):
@@ -405,17 +476,19 @@ def svn_gen(args, regex=None):
                            stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
 
-    def read_stderr(stderr):
-        for line in line_gen(stderr):
-            add_warning_line(line)
-            sys.stderr.write('%s\n' % line)
-
     t = threading.Thread(target=read_stderr, args=(svn.stderr,))
     t.daemon = True
     t.start()
-    for line in line_gen(svn.stdout):
-        if regex is None or not re.search(regex, line):
-            yield line
+
+    within_partial_line = False
+    for line in line_gen(svn.stdout.fileno()):
+        is_partial = not line.endswith('\n')
+        if within_partial_line or is_partial:
+            write(line)
+        else:
+            yield line.rstrip('\r\n')
+        within_partial_line = is_partial
+
     t.join()
     svn.wait()
     ret_code = svn.returncode
@@ -450,6 +523,11 @@ def display_notifications():
                             'warning'))
         for line in warning_lines:
             write_ln(wrap_color(line, 'warning'))
+    if stderr_parts:
+        total_stderr_size = sum(len(line) for line in stderr_parts)
+        write_ln(wrap_color(
+            'Total characters of stderr from svn: %d' % total_stderr_size,
+            'warning'))
 
 
 def split_status(status_line):
