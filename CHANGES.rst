@@ -4,6 +4,24 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.7
+=============
+
+- Make 'colorama' be a dependency.  This is necessary on Windows to support
+  colorized output.
+
+- Support additional Subversion switches:
+
+  --force-interactive
+  --ignore-properties
+  --include-externals
+  --no-diff-added
+  --patch-compatible
+  --properties-only
+  --search
+  --search-and
+  --show-inherited-props
+
 Version 0.7.6
 =============
 

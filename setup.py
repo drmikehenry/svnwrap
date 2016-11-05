@@ -44,6 +44,7 @@ setup(
     packages=find_packages(),
     py_modules=[NAME],
     install_requires=[
+        'colorama',
     ],
     entry_points={
         'console_scripts': [
