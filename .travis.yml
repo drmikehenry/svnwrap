@@ -9,7 +9,10 @@ python:
 
 install:
   - "pip install -r requirements.txt"
+  - "pip install -r requirements-dev.txt"
   - "pip install -e ."
 
 script:
   - py.test
+  # flake8 does not support Python 2.6
+  - if [[ $TRAVIS_PYTHON_VERSION != 2.6 ]]; then flake8; fi
