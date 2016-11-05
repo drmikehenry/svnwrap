@@ -9,6 +9,12 @@ Version 0.7.6
 
 - Avoid DeprecationWarning for using SafeConfigParser in Python 3.2+.
 
+- Avoid filtering stdout and stderr during "svn merge" operations.  This ensures
+  that the output destined for the user's terminal comes out in the desired
+  order; otherwise, it's possible for Subversion's menu choices to show up
+  too early (e.g., when choosing the "diff-full" operation, the menu is
+  redisplayed first followed by the actual diff output, leading to confusion).
+
 Version 0.7.5
 =============
 

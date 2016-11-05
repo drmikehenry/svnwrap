@@ -1386,7 +1386,30 @@ def main():
             wc_path = '.'
         urls = [adjust_url_for_wc_path(url, wc_path) for url in pos_args]
         args = switch_args + urls + [wc_path]
-        write_update_lines(svn_gen_cmd(cmd, args, regex=UPDATE_REX))
+        # Using svn_gen_cmd() during merge operation allows direct-to-tty
+        # menu options to appear out-of-order with respect to
+        # stdout-through-the-pipe.  So, for example, when a conflict causes an
+        # interactive menu to appear, pressing "df" will generate the diff in
+        # the wrong order relative to the menu.  In the example below, the
+        # menu starting with "Select" should appear after the actual diff,
+        # but due to lag through the pipe, the menu tends to show up first:
+        #
+        # Select: (p) postpone, (df) show diff, (e) edit file, (m) merge,
+        #         (r) mark resolved, (mc) my side of conflict,
+        #         (tc) their side of conflict, (s) show all options: --- \
+        #         README.txt.working       - MINE
+        # +++ README.txt  - MERGED
+        # @@ -1,3 +1,7 @@
+        # one
+        # +<<<<<<< .working
+        # from branch1.
+        # +=======
+        # +from trunk
+        # +>>>>>>> .merge-right.r5
+        # three
+
+        # write_update_lines(svn_gen_cmd(cmd, args, regex=UPDATE_REX))
+        svn_call([cmd] + args)
 
     elif cmd == 'log':
         setup_pager()
