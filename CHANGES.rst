@@ -4,6 +4,11 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.6
+=============
+
+- Avoid DeprecationWarning for using SafeConfigParser in Python 3.2+.
+
 Version 0.7.5
 =============
 

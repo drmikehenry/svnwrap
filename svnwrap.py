@@ -22,7 +22,14 @@ import locale
 import textwrap
 import threading
 
-__version__ = '0.7.5'
+if sys.version_info < (3, 0):
+    from ConfigParser import SafeConfigParser as ConfigParser
+elif sys.version_info < (3, 2):
+    from configparser import SafeConfigParser as ConfigParser
+else:
+    from configparser import ConfigParser
+
+__version__ = '0.7.6'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -114,7 +121,7 @@ def get_svnwrap_ini_path():
 
 
 def svnwrap_config():
-    config = configparser.SafeConfigParser()
+    config = ConfigParser()
     config.read(get_svnwrap_ini_path())
     return config
 
@@ -148,7 +155,7 @@ def get_subversion_ini_path():
 
 
 def subversion_config():
-    config = configparser.SafeConfigParser()
+    config = ConfigParser()
     config.read(get_subversion_ini_path())
     return config
 

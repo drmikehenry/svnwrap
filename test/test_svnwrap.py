@@ -2,9 +2,17 @@
 
 import unittest
 import svnwrap
+import warnings
 
 
 class TestSvnwrap(unittest.TestCase):
+
+    def setUp(self):
+        warnings.simplefilter('error')
+
+    def test_svnwrap_config(self):
+        svnwrap.svnwrap_config()
+
     def test_paths_equal(self):
         self.assertTrue(svnwrap.paths_equal(
             'somepath',
