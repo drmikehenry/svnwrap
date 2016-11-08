@@ -35,7 +35,7 @@ elif sys.version_info < (3, 2):
 else:
     from configparser import ConfigParser
 
-__version__ = '0.7.7'
+__version__ = '0.7.8'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -486,7 +486,9 @@ def svn_gen(args, regex=None):
         if within_partial_line or is_partial:
             write(line)
         else:
-            yield line.rstrip('\r\n')
+            line = line.rstrip('\r\n')
+            if regex is None or not re.search(regex, line):
+                yield line
         within_partial_line = is_partial
 
     t.join()

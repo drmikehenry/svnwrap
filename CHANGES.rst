@@ -4,6 +4,12 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.8
+=============
+
+- Restore line suppression feature lost during the refactoring of the line
+  generation logic.
+
 Version 0.7.7
 =============
 
