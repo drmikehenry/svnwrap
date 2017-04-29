@@ -225,5 +225,6 @@ def main():
     else:
         write_ln('testsvn unknown command: svn %s %s' % (cmd, ' '.join(args)))
 
+
 if __name__ == '__main__':
     main()

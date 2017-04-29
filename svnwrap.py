@@ -165,6 +165,7 @@ def subversion_config():
     config.read(get_subversion_ini_path())
     return config
 
+
 STATUS_REX = r'^Performing status|^\s*$|^X[ \t]'
 UPDATE_REX = (r'^Fetching external|^External |^Updated external|^\s*$' +
               r'|^At revision')
@@ -262,6 +263,7 @@ def read_color_scheme():
                 background, key))
 
         color_scheme[key] = [foreground, background]
+
 
 using_color = os.isatty(sys.stdout.fileno())
 if using_color and platform_is_windows:
@@ -978,6 +980,7 @@ def svn_url_map(url):
     debug_ln('    ==> %s' % repr(url))
     return url
 
+
 subcommands = set("""
 ?
 add
@@ -1660,6 +1663,7 @@ def main_with_svn_error_handling():
 def color_test():
     for color in sorted(color_dict):
         write_ln(wrap_color('This is %s' % color, color))
+
 
 if __name__ == '__main__':
     main_with_svn_error_handling()
