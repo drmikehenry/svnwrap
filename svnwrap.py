@@ -1223,6 +1223,8 @@ checkout (co)     - checkout (prettied output)
 diff, ediff (di)  - highlighted diff output with linewise svn:externals diffing
 bdiff, ebdiff     - like diff but ignoring space changes
 kdiff (kdiff3)    - diff with "--diff-cmd kdiff3" (consider "meld ." instead)
+pdiff             - generate ``patch``-compatible diff; equivalent to:
+                    ``diff --diff-cmd diff -x -U1000000 --patch-compatible``
 mergeraw RAWPATH [WCPATH]
                   - merge raw (non-SVN) tree into working copy
 ee                - propedit svn:externals
@@ -1549,6 +1551,12 @@ def main():
 
     elif cmd in ['kdiff', 'kdiff3']:
         svn_call(['diff', '--diff-cmd', 'kdiff3', '-x', '--qall'] + args)
+
+    elif cmd in ['pdiff']:
+        setup_pager()
+        write_diff_lines(diff_filter(svn_gen_diff(
+            '--diff-cmd diff -x -U1000000 --patch-compatible'.split() +
+            args)))
 
     elif cmd == 'mergeraw':
         if not args or len(args) > 2:

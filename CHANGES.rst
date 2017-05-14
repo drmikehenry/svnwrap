@@ -17,6 +17,10 @@ Version 0.7.9
 
 - Add ``--ie`` as an abbreviation for ``--ignore-externals``.
 
+- Add ``svn pdiff`` command as a ``patch-compatible`` diff, equivalent to::
+
+    svn diff --diff-cmd diff -x -U1000000 --patch-compatible
+
 Version 0.7.8
 =============
 
