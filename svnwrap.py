@@ -1232,8 +1232,11 @@ pgi               - propget svn:ignore
 url               - show URL as received from "svn info"
 helpwrap          - this help
 
-Global svnwrap options:
+svnwrap options:
   --color on|off|auto       use color in output (defaults to auto)
+  --no-pager                disable the automatic use of a pager
+  --debug                   enable debug printing (mainly for maintainer use)
+  --svn path/to/svn         change path to ``svn`` utility (mainly for testing)
 
 Svnwrap configuration file: %(svnwrap_ini_path)s
 

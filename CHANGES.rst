@@ -9,6 +9,12 @@ Version 0.7.9
 
 - Add support for Python 3.6 (thanks to John Hagen).
 
+- Document some overlooked switches::
+
+    --no-pager           disable the automatic use of a pager
+    --debug              enable debug printing (mainly for maintainer use)
+    --svn path/to/svn    change path to ``svn`` utility (mainly for testing)
+
 Version 0.7.8
 =============
 
