@@ -1235,6 +1235,7 @@ helpwrap          - this help
 svnwrap options:
   --color on|off|auto       use color in output (defaults to auto)
   --no-pager                disable the automatic use of a pager
+  --ie                      abbreviation for ``--ignore-externals``
   --debug                   enable debug printing (mainly for maintainer use)
   --svn path/to/svn         change path to ``svn`` utility (mainly for testing)
 
@@ -1324,6 +1325,8 @@ def parse_args():
         elif arg == '--no-pager':
             global use_pager
             use_pager = False
+        elif arg == '--ie':
+            args.insert(0, '--ignore-externals')
         elif arg.startswith('--'):
             if '=' in arg:
                 arg, attached_arg = arg.split('=', 1)

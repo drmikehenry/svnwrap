@@ -15,6 +15,8 @@ Version 0.7.9
     --debug              enable debug printing (mainly for maintainer use)
     --svn path/to/svn    change path to ``svn`` utility (mainly for testing)
 
+- Add ``--ie`` as an abbreviation for ``--ignore-externals``.
+
 Version 0.7.8
 =============
 
