@@ -15,6 +15,8 @@ import io
 import locale
 import os
 import platform
+import time
+import hashlib
 try:
     import queue
 except ImportError:
@@ -77,6 +79,18 @@ sample_ini_contents = """
 ## use_shell = false
 """
 
+shelf_usage = """Usage: svn shelf <sub-command> <args>
+
+Sub-commands:
+create            Creates shelf and reverts current changes
+create <f1, ...>  Creates shelf and reverts specified file(s)
+view <key>        View the contents of the patch file
+apply <key>       Applies changes based on the patch file of the shelf key
+drop <key>        Removes the patch file of the shelf key
+pop <key>         Runs ``apply`` and ``drop`` sub-commands respectively
+list              List all current keys on the shelf
+clear             Removes all patch files on the shelf"""
+
 # True when debugging.
 debugging = False
 
@@ -96,6 +110,102 @@ class SvnError(Exception):
 
 class PagerClosed(Exception):
     pass
+
+
+# noinspection PyMethodMayBeStatic
+class SvnShelf(object):
+    path = None
+    error_message = None
+
+    def __init__(self, path):
+        self.path = '%s/.svn/shelf' % path
+        if not os.path.exists(self.path):
+            os.mkdir(self.path)
+
+    def help(self):
+        write_ln(shelf_usage)
+
+    def execute(self, args=None):
+        if len(args) == 0:
+            self.help()
+        elif args[0] == 'create':
+            args.pop(0)
+            self.create(args)
+        elif args[0] == 'apply':
+            self.apply(args[1])
+        elif args[0] == 'drop':
+            self.drop(args[1])
+        elif args[0] == 'pop':
+            self.pop(args[1])
+        elif args[0] == 'view':
+            self.view(args[1])
+        elif args[0] == 'clear':
+            self.clear()
+        elif args[0] == 'list':
+            self.list()
+        else:
+            error_msg = 'Invalid svn shelf sub-command "%s"' % args[0]
+            write_ln(wrap_color(error_msg, 'warning'))
+
+    def create(self, args=None):
+        revert_args = ['-R', '.'] if not args else args
+        hash_key = hashlib.md5(str(time.time()).encode()).hexdigest()
+        patch = '%s/%s.patch' % (self.path, hash_key)
+
+        svn_call(['diff'] + args, stdout=open(patch, 'w'))
+        write_ln('Shelf key created: %s' % (wrap_color(hash_key, 'info')))
+
+        svn_call(['revert'] + revert_args)
+
+    def apply(self, hash_key):
+        patch = '%s/%s.patch' % (self.path, hash_key)
+        if not self.is_patch_file(patch, hash_key):
+            write_ln(self.error_message)
+            return False
+
+        write_ln('Applying shelf key: ' + wrap_color('%s' % hash_key, 'info'))
+        svn_call(['patch', patch])
+        return True
+
+    def drop(self, hash_key):
+        patch = '%s/%s.patch' % (self.path, hash_key)
+        if not self.is_patch_file(patch, hash_key):
+            write_ln(self.error_message)
+            return
+
+        os.remove(patch)
+        write_ln('Removed shelf key: %s' % (wrap_color(hash_key, 'info')))
+
+    def pop(self, hash_key):
+        if self.apply(hash_key):
+            self.drop(hash_key)
+
+    def clear(self):
+        patches = os.listdir(self.path)
+        for patch in patches:
+            os.remove('%s/%s' % (self.path, patch))
+            write_ln(wrap_color('Shelf list has been cleared', 'info'))
+
+    def list(self):
+        patches = os.listdir(self.path)
+        for patch in patches:
+            hash_key = wrap_color('%s' % patch.split('.')[0], 'info')
+            write_ln('Shelf key: %s' % hash_key)
+
+    def view(self, hash_key):
+        patch = '%s/%s.patch' % (self.path, hash_key)
+        if not self.is_patch_file(patch, hash_key):
+            write_ln(self.error_message)
+            return
+
+        write_diff_lines(diff_filter(open(patch, 'r').read().splitlines()))
+
+    def is_patch_file(self, patch, hash_key):
+        if not os.path.exists(patch) or not os.path.isfile(patch):
+            error_msg = 'Shelf key "%s" not found' % hash_key
+            self.error_message = wrap_color(error_msg, 'warning')
+            return False
+        return True
 
 
 def get_environ(env_var, default=None):
@@ -398,11 +508,11 @@ def subprocess_popen(*args, **kwargs):
     return subprocess.Popen(*args, **add_restore_signals(kwargs))
 
 
-def svn_call(args=None):
+def svn_call(args=None, **kwargs):
     if args is None:
         args = []
     subprocess_args = [SVN] + args
-    ret_code = subprocess_call(subprocess_args)
+    ret_code = subprocess_call(subprocess_args, **kwargs)
     if ret_code != 0:
         raise SvnError('failing return code %d for external program:\n  %s' %
                        (ret_code, ' '.join(subprocess_args)))
@@ -562,6 +672,14 @@ def svn_gen_info(info_args):
         else:
             yield info_dict
             info_dict = {}
+
+
+def svn_get_root_path():
+    info_dict_list = list(svn_gen_info([]))
+    try:
+        return info_dict_list[0]['Working Copy Root Path']
+    except (IndexError, KeyError):
+        raise SvnError('invalid subversion path')
 
 
 def svn_gen_diff(args, ignore_space_change=False):
@@ -1210,6 +1328,7 @@ svnwrap version %(version)s providing:
 - Integration with kdiff3
 - URL aliases and mapping
 - URL adjustment to infer the "tail" of a URL from context (see below).
+- Shelf command (like git stash)
 
 status (st, stat) - show status (prettied output)
 stnames           - show status trimmed to bare path names
@@ -1225,6 +1344,8 @@ bdiff, ebdiff     - like diff but ignoring space changes
 kdiff (kdiff3)    - diff with "--diff-cmd kdiff3" (consider "meld ." instead)
 pdiff             - generate ``patch``-compatible diff; equivalent to:
                     ``diff --diff-cmd diff -x -U1000000 --patch-compatible``
+shelf             - almost the same functionality as ``git stash``
+                    run ``svn shelf`` to view available sub-commands
 mergeraw RAWPATH [WCPATH]
                   - merge raw (non-SVN) tree into working copy
 ee                - propedit svn:externals
@@ -1652,6 +1773,10 @@ def main():
     elif cmd == 'log':
         setup_pager()
         write_log_lines(svn_gen_cmd(cmd, args))
+
+    elif cmd == 'shelf':
+        stash = SvnShelf(path=svn_get_root_path())
+        stash.execute(args)
 
     else:
         svn_call([cmd] + args)
