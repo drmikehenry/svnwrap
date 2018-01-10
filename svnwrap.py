@@ -79,6 +79,18 @@ sample_ini_contents = """
 ## use_shell = false
 """
 
+shelf_usage = """Usage: svn shelf <sub-command> <args>
+
+Sub-commands:
+create            Creates shelf and reverts current changes
+create <f1, ...>  Creates shelf and reverts specified file(s)
+view <key>        View the contents of the patch file
+apply <key>       Applies changes based on the patch file of the shelf key
+drop <key>        Removes the patch file of the shelf key
+pop <key>         Runs ``apply`` and ``drop`` sub-commands respectively
+list              List all current keys on the shelf
+clear             Removes all patch files on the shelf"""
+
 # True when debugging.
 debugging = False
 
@@ -103,6 +115,7 @@ class PagerClosed(Exception):
 # noinspection PyMethodMayBeStatic
 class SvnShelf(object):
     path = None
+    error_message = None
 
     def __init__(self, path):
         self.path = '%s/.svn/shelf' % path
@@ -110,14 +123,7 @@ class SvnShelf(object):
             os.mkdir(self.path)
 
     def help(self):
-        write_ln('* svn shelf create                  Creates shelf and reverts current changes')
-        write_ln('* svn shelf create <f1, f2, ... >   Creates shelf and reverts specified file(s)')
-        write_ln('* svn shelf view <key>              View the contents of the patch file')
-        write_ln('* svn shelf apply <key>             Applies changes based on the patch file of the shelf key')
-        write_ln('* svn shelf drop <key>              Removes the patch file of the shelf key')
-        write_ln('* svn shelf pop <key>               Runs ``apply`` and ``drop`` sub-commands respectively')
-        write_ln('* svn shelf list                    List all current keys on the shelf')
-        write_ln('* svn shelf clear                   Removes all patch files on the shelf')
+        write_ln(shelf_usage)
 
     def execute(self, args=None):
         if len(args) == 0:
@@ -138,7 +144,8 @@ class SvnShelf(object):
         elif args[0] == 'list':
             self.list()
         else:
-            write_ln(wrap_color('Invalid svn shelf sub-command "%s"' % args[0], 'warning'))
+            error_msg = 'Invalid svn shelf sub-command "%s"' % args[0]
+            write_ln(wrap_color(error_msg, 'warning'))
 
     def create(self, args=None):
         revert_args = ['-R', '.'] if not args else args
@@ -152,18 +159,19 @@ class SvnShelf(object):
 
     def apply(self, hash_key):
         patch = '%s/%s.patch' % (self.path, hash_key)
-        if not os.path.exists(patch) or not os.path.isfile(patch):
-            write_ln(wrap_color('Shelf key "%s" not found' % hash_key, 'warning'))
+        if not self.is_patch_file(patch, hash_key):
+            write_ln(self.error_message)
             return False
 
-        write_ln('Applying shelf key: ' + wrap_color('%s' % patch.split('.')[0], 'info'))
+        write_ln('Applying shelf key: ' + wrap_color('%s' % hash_key, 'info'))
         svn_call(['patch', patch])
         return True
 
     def drop(self, hash_key):
         patch = '%s/%s.patch' % (self.path, hash_key)
-        if not os.path.exists(patch) or not os.path.isfile(patch):
-            write_ln(wrap_color('Shelf key "%s" not found' % hash_key, 'warning'))
+        if not self.is_patch_file(patch, hash_key):
+            write_ln(self.error_message)
+            return
 
         os.remove(patch)
         write_ln('Removed shelf key: %s' % (wrap_color(hash_key, 'info')))
@@ -181,14 +189,23 @@ class SvnShelf(object):
     def list(self):
         patches = os.listdir(self.path)
         for patch in patches:
-            write_ln('Shelf key: ' + wrap_color('%s' % patch.split('.')[0], 'info'))
+            hash_key = wrap_color('%s' % patch.split('.')[0], 'info')
+            write_ln('Shelf key: %s' % hash_key)
 
     def view(self, hash_key):
         patch = '%s/%s.patch' % (self.path, hash_key)
-        if not os.path.exists(patch) or not os.path.isfile(patch):
-            write_ln(wrap_color('Shelf key "%s" not found' % hash_key, 'warning'))
+        if not self.is_patch_file(patch, hash_key):
+            write_ln(self.error_message)
+            return
 
         write_diff_lines(diff_filter(open(patch, 'r').read().splitlines()))
+
+    def is_patch_file(self, patch, hash_key):
+        if not os.path.exists(patch) or not os.path.isfile(patch):
+            error_msg = 'Shelf key "%s" not found' % hash_key
+            self.error_message = wrap_color(error_msg, 'warning')
+            return False
+        return True
 
 
 def get_environ(env_var, default=None):
