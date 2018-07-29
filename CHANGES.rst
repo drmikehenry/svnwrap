@@ -4,6 +4,11 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.10
+==============
+
+- Add support for Python 3.7 (thanks to John Hagen).
+
 Version 0.7.9
 =============
 

@@ -35,7 +35,7 @@ elif sys.version_info < (3, 2):
 else:
     from configparser import ConfigParser
 
-__version__ = '0.7.9'
+__version__ = '0.7.10'
 
 platform_is_windows = platform.system() == 'Windows'
 
