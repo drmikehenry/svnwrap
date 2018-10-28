@@ -35,7 +35,7 @@ elif sys.version_info < (3, 2):
 else:
     from configparser import ConfigParser
 
-__version__ = '0.7.12'
+__version__ = '0.7.13'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -282,7 +282,7 @@ if using_color and platform_is_windows:
     try:
         import colorama
         colorama.init()
-    except ImportError as e:
+    except ImportError:
         using_color = False
 
 if os.isatty(sys.stdout.fileno()):

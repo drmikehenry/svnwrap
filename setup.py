@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 import sys
 
 sys_version = tuple(sys.version_info[:2])
-min_version = (2, 6)
+min_version = (2, 7)
 if sys_version < min_version:
     sys.exit('Python version %d.%d is too old; %d.%d or newer is required.' %
              (sys_version + min_version))
@@ -28,7 +28,6 @@ setup(
         'Environment :: Console',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',

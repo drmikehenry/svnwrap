@@ -4,6 +4,13 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.13
+==============
+
+- Drop explicit support for Python 2.6.
+
+- Fix flake8 error.
+
 Version 0.7.12
 ==============
 

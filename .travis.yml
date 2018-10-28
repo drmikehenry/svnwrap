@@ -1,7 +1,6 @@
 language: python
 matrix:
     include:
-        - python: 2.6
         - python: 2.7
         - python: 3.4
         - python: 3.5
@@ -19,5 +18,4 @@ install:
 
 script:
   - py.test
-  # flake8 does not support Python 2.6
-  - if [[ $TRAVIS_PYTHON_VERSION != 2.6 ]]; then flake8; fi
+  - flake8
