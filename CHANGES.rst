@@ -4,6 +4,16 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.12
+==============
+
+- Avoid Python 3 exception ``configparser.DuplicateOptionError`` when reading
+  ``~/.subversion/config`` having auto-props differing only in case, e.g.::
+
+    [auto-props]
+    *.c = svn:eol-style=native
+    *.C = svn:eol-style=native
+
 Version 0.7.11
 ==============
 

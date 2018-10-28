@@ -35,7 +35,7 @@ elif sys.version_info < (3, 2):
 else:
     from configparser import ConfigParser
 
-__version__ = '0.7.11'
+__version__ = '0.7.12'
 
 platform_is_windows = platform.system() == 'Windows'
 
@@ -161,7 +161,19 @@ def get_subversion_ini_path():
 
 
 def subversion_config():
-    config = ConfigParser()
+    # Python 3.2 added ``strict`` to prohibit duplicate keys.
+    # ~/.subversion/config may well have duplicate keys because of
+    # lines handling lowercase and uppercase filename globs, e.g.::
+    #
+    #   [auto-props]
+    #   *.c = svn:eol-style=native
+    #   *.C = svn:eol-style=native
+    # Disable this strict checking if it's available, and otherwise
+    # just use the older ConfigParser behavior that permitted duplicates.
+    try:
+        config = ConfigParser(strict=False)
+    except TypeError:
+        config = ConfigParser()
     config.read(get_subversion_ini_path())
     return config
 
