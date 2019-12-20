@@ -252,7 +252,7 @@ def read_color_scheme():
 
         if key not in valid_keys:
             continue
-        colors = map(lambda x: x.strip() or 'default', value.split(','))
+        colors = list(map(lambda x: x.strip() or 'default', value.split(',')))
         if len(colors) == 1:
             foreground, background = colors[0], None
         elif len(colors) == 2:
