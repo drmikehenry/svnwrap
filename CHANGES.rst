@@ -4,6 +4,12 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.7.14
+==============
+
+- Ensure colors comes back as a list (thanks to John Szakmeister).  This fixes a
+  Python 3 incompatibility.
+
 Version 0.7.13
 ==============
 
