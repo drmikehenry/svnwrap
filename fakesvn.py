@@ -26,7 +26,7 @@ A      svnwrap.sh
 
 ?      Wiki-20
 ?      Account-Manager
-C      svnwrap/testsvn.py
+C      svnwrap/fakesvn.py
 G      svnwrap/merged.py
 ?      pyrepl
 ?      svnwrap/svnwrap.py
@@ -49,7 +49,7 @@ Fetching external
 External
 ?      svnwrap
 A      svnwrap/svnwrap.sh
-C      svnwrap/testsvn.py
+C      svnwrap/fakesvn.py
 G      svnwrap/merged.py
 A      other/stuff.py
 M      other/goodStuff.py
@@ -64,7 +64,7 @@ def fake_switch():
     write(
         """\
 A      svnwrap/svnwrap.sh
-C      svnwrap/testsvn.py
+C      svnwrap/fakesvn.py
 G      svnwrap/merged.py
 D      other/stuff.py
 
@@ -234,7 +234,7 @@ def main():
         write_ln("Type 'svn help' for usage.")
 
     else:
-        write_ln("testsvn unknown command: svn %s %s" % (cmd, " ".join(args)))
+        write_ln("fakesvn unknown command: svn %s %s" % (cmd, " ".join(args)))
 
 
 if __name__ == "__main__":

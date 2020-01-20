@@ -3,4 +3,4 @@ include LICENSE.rst
 include CHANGES.rst
 include requirements.txt
 include dev-requirements.txt
-include testsvn.py
+include fakesvn.py
