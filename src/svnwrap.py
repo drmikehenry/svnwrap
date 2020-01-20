@@ -6,22 +6,12 @@ from __future__ import unicode_literals
 
 import atexit
 import codecs
-
-try:
-    import ConfigParser as configparser
-except ImportError:
-    import configparser
 import difflib
 import errno
 import io
 import locale
 import os
 import platform
-
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 import re
 import shlex
 import shutil
@@ -32,11 +22,13 @@ import textwrap
 import threading
 
 if sys.version_info < (3, 0):
+    import ConfigParser as configparser
     from ConfigParser import SafeConfigParser as ConfigParser
-elif sys.version_info < (3, 2):
-    from configparser import SafeConfigParser as ConfigParser
+    import Queue as queue
 else:
+    import configparser
     from configparser import ConfigParser
+    import queue
 
 __version__ = "0.8.0"
 

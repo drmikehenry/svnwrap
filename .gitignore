@@ -1,4 +1,7 @@
-/build
-/dist
+*.egg-info/
 *.pyc
-*.egg-info
+/.coverage
+/.tox/
+/build/
+/dist/
+/htmlcov/

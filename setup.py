@@ -12,21 +12,28 @@ if sys_version < min_version:
         % (sys_version + min_version)
     )
 
+
+def open_text(name):
+    if sys_version == (2, 7):
+        return open(name)
+    return open(name, encoding="utf-8")
+
+
 NAME = "svnwrap"
 
 __version__ = None
-for line in open("src/{}.py".format(NAME), encoding="utf-8"):
+for line in open_text("src/{}.py".format(NAME)):
     if line.startswith("__version__"):
         __version__ = line.split('"')[1]
         break
 
-with open("README.rst", encoding="utf-8") as f:
+with open_text("README.rst") as f:
     long_description = f.read()
 
-with open("requirements.txt", encoding="utf-8") as f:
+with open_text("requirements.txt") as f:
     requirements = f.read()
 
-with open("dev-requirements.txt", encoding="utf-8") as f:
+with open_text("dev-requirements.txt") as f:
     dev_requirements = f.read()
 
 setuptools.setup(
@@ -37,9 +44,7 @@ setuptools.setup(
     py_modules=[NAME],
     python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
     install_requires=requirements,
-    extras_require={
-        "dev": dev_requirements,
-    },
+    extras_require={"dev": dev_requirements,},
     entry_points={
         "console_scripts": ["svnwrap = svnwrap:main_with_svn_error_handling"],
     },
