@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-from setuptools import setup, find_packages
+import setuptools
 import sys
 
 sys_version = tuple(sys.version_info[:2])
@@ -14,19 +14,46 @@ if sys_version < min_version:
 
 NAME = "svnwrap"
 
-for line in open(NAME + ".py"):
+__version__ = None
+for line in open("src/{}.py".format(NAME), encoding="utf-8"):
     if line.startswith("__version__"):
-        __version__ = line.split("'")[1]
+        __version__ = line.split('"')[1]
         break
 
-description = "Wrapper script for Subversion command-line client"
+with open("README.rst", encoding="utf-8") as f:
+    long_description = f.read()
 
-setup(
+with open("requirements.txt", encoding="utf-8") as f:
+    requirements = f.read()
+
+with open("dev-requirements.txt", encoding="utf-8") as f:
+    dev_requirements = f.read()
+
+setuptools.setup(
     name=NAME,
     version=__version__,
-    description=description,
-    long_description=open("README.rst").read(),
+    packages=setuptools.find_packages("src"),
+    package_dir={"": "src"},
+    py_modules=[NAME],
+    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+    install_requires=requirements,
+    extras_require={
+        "dev": dev_requirements,
+    },
+    entry_points={
+        "console_scripts": ["svnwrap = svnwrap:main_with_svn_error_handling"],
+    },
+    include_package_data=True,
+    description="Wrapper script for Subversion command-line client",
+    long_description=long_description,
+    keywords="svn subversion wrapper",
+    url="https://github.com/drmikehenry/svnwrap",
+    author="Michael Henry",
+    author_email="drmikehenry@drmikehenry.com",
+    license="MIT",
+    zip_safe=True,
     classifiers=[
+        "Development Status :: 5 - Production/Stable",
         "Topic :: Software Development :: Version Control",
         "Environment :: Console",
         "License :: OSI Approved :: MIT License",
@@ -37,19 +64,6 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
-        "Development Status :: 5 - Production/Stable",
+        "Programming Language :: Python :: 3.8",
     ],
-    keywords="svn subversion wrapper",
-    url="https://github.com/drmikehenry/svnwrap",
-    author="Michael Henry",
-    author_email="drmikehenry@drmikehenry.com",
-    license="MIT",
-    packages=find_packages(),
-    py_modules=[NAME],
-    install_requires=["colorama",],
-    entry_points={
-        "console_scripts": ["svnwrap = svnwrap:main_with_svn_error_handling",],
-    },
-    include_package_data=True,
-    zip_safe=False,
 )

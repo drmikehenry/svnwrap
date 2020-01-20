@@ -1,5 +1,6 @@
-include CHANGES.rst
+recursive-include tests *.py
 include LICENSE.rst
-include Makefile
+include CHANGES.rst
 include requirements.txt
+include dev-requirements.txt
 include testsvn.py
