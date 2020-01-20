@@ -1,22 +1,13 @@
 #!/usr/bin/env python
 # coding=utf-8
 
-import unittest
 import svnwrap
-import warnings
 
 
-class TestSvnwrap(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter("error")
-
-    def test_svnwrap_config(self):
-        svnwrap.svnwrap_config()
-
-    def test_paths_equal(self):
-        self.assertTrue(svnwrap.paths_equal("somepath", "somepath"))
-        self.assertFalse(svnwrap.paths_equal("somepath1", "somepath2"))
+def test_svnwrap_config():
+    svnwrap.svnwrap_config()
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_paths_equal():
+    assert svnwrap.paths_equal("somepath", "somepath")
+    assert not svnwrap.paths_equal("somepath1", "somepath2")
