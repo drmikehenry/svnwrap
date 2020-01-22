@@ -20,6 +20,23 @@ import subprocess
 import sys
 import textwrap
 import threading
+try:
+    from typing import (
+        Any,
+        BinaryIO,
+        Callable,
+        Dict,
+        Iterable,
+        Iterator,
+        List,
+        Optional,
+        Set,
+        TextIO,
+        Tuple,
+        Union,
+    )
+except ImportError:
+    pass
 
 if sys.version_info < (3, 0):
     import ConfigParser as configparser
@@ -77,11 +94,13 @@ debugging = False
 
 
 def debug(s):
+    # type: (str) -> None
     if debugging:
         sys.stdout.write(s)
 
 
 def debug_ln(s=""):
+    # type: (str) -> None
     debug(s + "\n")
 
 
@@ -94,6 +113,7 @@ class PagerClosed(Exception):
 
 
 def get_environ(env_var, default=None):
+    # type: (str, str) -> str
     try:
         return os.environ[env_var]
     except KeyError:
@@ -103,6 +123,7 @@ def get_environ(env_var, default=None):
 
 
 def get_svnwrap_config_dir():
+    # type: () -> str
     config_home = os.path.join(get_environ("HOME", ""), ".config")
     if platform_is_windows:
         config_home = get_environ("APPDATA", config_home)
@@ -111,6 +132,7 @@ def get_svnwrap_config_dir():
 
 
 def get_svnwrap_ini_path():
+    # type: () -> str
     config_dir = get_svnwrap_config_dir()
     ini_path = os.path.join(config_dir, "config.ini")
     if not os.path.isdir(config_dir):
@@ -122,12 +144,14 @@ def get_svnwrap_ini_path():
 
 
 def svnwrap_config():
+    # type: () -> ConfigParser
     config = ConfigParser()
     config.read(get_svnwrap_ini_path())
     return config
 
 
 def config_boolean(config, section, option, default_value):
+    # type: (ConfigParser, str, str, bool) -> bool
     if config.has_option(section, option):
         return config.getboolean(section, option)
     else:
@@ -135,15 +159,17 @@ def config_boolean(config, section, option, default_value):
 
 
 def get_aliases():
+    # type: () -> Dict[str, str]
     config = svnwrap_config()
     try:
         aliases = config.items("aliases")
     except configparser.NoSectionError:
-        aliases = {}
+        aliases = []
     return dict(aliases)
 
 
 def get_subversion_config_dir():
+    # type: () -> str
     if platform_is_windows:
         config_dir = os.path.join(get_environ("APPDATA", ""), "Subversion")
     else:
@@ -152,10 +178,12 @@ def get_subversion_config_dir():
 
 
 def get_subversion_ini_path():
+    # type: () -> str
     return os.path.join(get_subversion_config_dir(), "config")
 
 
 def subversion_config():
+    # type: () -> ConfigParser
     # Python 3.2 added ``strict`` to prohibit duplicate keys.
     # ~/.subversion/config may well have duplicate keys because of
     # lines handling lowercase and uppercase filename globs, e.g.::
@@ -208,28 +236,28 @@ for i, base_name in enumerate(color_names):
 """
 
 color_scheme = {
-    "diffAdd": ["lightblue", None],
-    "diffRemoved": ["lightred", None],
-    "diffMisc": ["darkyellow", None],
-    "conflict": ["lightwhite", "darkred"],
-    "statusAdded": ["darkgreen", None],
-    "statusDeleted": ["darkred", None],
-    "statusUpdated": ["lightblue", None],
-    "statusConflict": ["lightwhite", "darkred"],
-    "statusModified": ["lightblue", None],
-    "statusMerged": ["darkmagenta", None],
-    "statusUntracked": ["lightblack", None],
-    "status": ["lightblack", None],
-    "info": ["darkgreen", None],
-    "logRev": ["lightyellow", None],
-    "logCommitter": ["lightblue", None],
-    "logDate": ["lightblack", None],
-    "logNumLines": ["lightblack", None],
-    "logFieldSeparator": ["lightblack", None],
-    "logSeparator": ["darkgreen", None],
-    "logText": ["darkwhite", None],
-    "warning": ["lightwhite", "darkred"],
-}
+    "diffAdd": ("lightblue", None),
+    "diffRemoved": ("lightred", None),
+    "diffMisc": ("darkyellow", None),
+    "conflict": ("lightwhite", "darkred"),
+    "statusAdded": ("darkgreen", None),
+    "statusDeleted": ("darkred", None),
+    "statusUpdated": ("lightblue", None),
+    "statusConflict": ("lightwhite", "darkred"),
+    "statusModified": ("lightblue", None),
+    "statusMerged": ("darkmagenta", None),
+    "statusUntracked": ("lightblack", None),
+    "status": ("lightblack", None),
+    "info": ("darkgreen", None),
+    "logRev": ("lightyellow", None),
+    "logCommitter": ("lightblue", None),
+    "logDate": ("lightblack", None),
+    "logNumLines": ("lightblack", None),
+    "logFieldSeparator": ("lightblack", None),
+    "logSeparator": ("darkgreen", None),
+    "logText": ("darkwhite", None),
+    "warning": ("lightwhite", "darkred"),
+}  # type: Dict[str, Tuple[str, Optional[str]]]
 
 entry_name_to_style_name = {}
 for key in color_scheme:
@@ -237,6 +265,7 @@ for key in color_scheme:
 
 
 def read_color_scheme():
+    # type: () -> None
     config = svnwrap_config()
     try:
         configured_colors = dict(config.items("colors"))
@@ -274,7 +303,7 @@ def read_color_scheme():
                 "invalid color ('%s') specified for '%s'" % (background, key)
             )
 
-        color_scheme[key] = [foreground, background]
+        color_scheme[key] = (foreground, background)
 
 
 using_color = os.isatty(sys.stdout.fileno())
@@ -292,10 +321,11 @@ else:
     use_pager = False
 
 # Will contain a subprocess.Popen object, if a pager is in use.
-pager = None
+pager = None  # type: Optional[subprocess.Popen]
 
 
 def set_color_num(color_num):
+    # type: (int) -> str
     if using_color:
         return "\x1b[%dm" % color_num
     else:
@@ -303,6 +333,7 @@ def set_color_num(color_num):
 
 
 def set_foreground(foreground):
+    # type: (Optional[str]) -> str
     if foreground is None:
         return ""
     i = color_dict[foreground]
@@ -314,6 +345,7 @@ def set_foreground(foreground):
 
 
 def set_background(background):
+    # type: (Optional[str]) -> str
     if background is None:
         return ""
     i = color_dict[background]
@@ -325,10 +357,12 @@ def set_background(background):
 
 
 def reset_colors():
+    # type: () -> str
     return set_color_num(0)
 
 
 def wrap_color(s, style):
+    # type: (str, str) -> str
     foreground, background = color_scheme[style]
     return (
         set_foreground(foreground)
@@ -339,6 +373,7 @@ def wrap_color(s, style):
 
 
 def write(s, f=None):
+    # type: (str, Optional[TextIO]) -> None
     if f is None:
         # We don't set f to sys.stdout as a default argument since a pager
         # maybe launched and change the value of sys.stdout.  So we defer
@@ -361,10 +396,12 @@ def write(s, f=None):
 
 
 def write_ln(line=""):
+    # type: (str) -> None
     write(line + "\n")
 
 
 def write_lines(lines):
+    # type: (Iterable[str]) -> None
     for line in lines:
         write_ln(line)
 
@@ -373,6 +410,7 @@ warning_lines = []
 
 
 def add_warning_line(line):
+    # type: (str) -> None
     warning_lines.append(line)
 
 
@@ -380,23 +418,21 @@ stderr_parts = []
 
 
 def add_stderr_text(text):
+    # type: (str) -> None
     stderr_parts.append(text)
 
 
 def restore_signals():
+    # type: () -> None
     # Python sets up or ignores several signals by default.  This restores the
     # default signal handling for the child process.
-    if hasattr(signal, "SIGINT"):
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-    if hasattr(signal, "SIGPIPE"):
-        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-    if hasattr(signal, "SIGXFZ"):
-        signal.signal(signal.SIGXFZ, signal.SIG_DFL)
-    if hasattr(signal, "SIGXFSZ"):
-        signal.signal(signal.SIGXFSZ, signal.SIG_DFL)
+    for attr in "SIGINT SIGPIPE SIGXFZ SIGXFSZ".split():
+        if hasattr(signal, attr):
+            signal.signal(getattr(signal, attr), signal.SIG_DFL)
 
 
 def add_restore_signals(kwargs):
+    # type: (Dict[str, Any]) -> Dict[str, Any]
     # preexec_fn is not supported on Windows, but we want to use it to restore
     # the signal handlers on other platforms.
     if not platform_is_windows:
@@ -406,14 +442,17 @@ def add_restore_signals(kwargs):
 
 
 def subprocess_call(*args, **kwargs):
+    # type: (Any, Any) -> int
     return subprocess.call(*args, **add_restore_signals(kwargs))
 
 
 def subprocess_popen(*args, **kwargs):
+    # type: (Any, Any) -> subprocess.Popen
     return subprocess.Popen(*args, **add_restore_signals(kwargs))
 
 
 def svn_call(args=None):
+    # type: (Optional[List[str]]) -> None
     if args is None:
         args = []
     subprocess_args = [SVN] + args
@@ -425,20 +464,23 @@ def svn_call(args=None):
         )
 
 
+def read_into_queue(input_io, input_queue):
+    # type: (BinaryIO, queue.Queue) -> None
+    block_size = 8192
+    while True:
+        raw_bytes = input_io.read(block_size)
+        input_queue.put(raw_bytes)
+        if not raw_bytes:
+            break
+
+
 def line_gen(path_or_fd, partial_line_timeout=0.2, encoding=None):
+    # type: (Union[str, int], float, str) -> Iterator[str]
     if encoding is None:
         encoding = locale.getpreferredencoding()
     decoder = codecs.getincrementaldecoder(encoding)()
     input_io = io.open(path_or_fd, "rb", closefd=False, buffering=0)
-    raw_bytes_queue = queue.Queue(10)
-
-    def read_into_queue(input_io, input_queue):
-        block_size = 8192
-        while True:
-            raw_bytes = input_io.read(block_size)
-            input_queue.put(raw_bytes)
-            if not raw_bytes:
-                break
+    raw_bytes_queue = queue.Queue(10)  # type: queue.Queue[bytes]
 
     io_thread = threading.Thread(
         target=read_into_queue, args=(input_io, raw_bytes_queue)
@@ -446,12 +488,10 @@ def line_gen(path_or_fd, partial_line_timeout=0.2, encoding=None):
     io_thread.daemon = True
     io_thread.start()
 
-    line_fragments = []
+    line_fragments = []  # type: List[str]
     while True:
-        if line_fragments:
-            timeout = partial_line_timeout
-            if timeout <= 0.0:
-                timeout = None
+        if line_fragments and partial_line_timeout > 0.0:
+            timeout = partial_line_timeout  # type: Optional[float]
         else:
             timeout = None
         try:
@@ -485,12 +525,14 @@ def line_gen(path_or_fd, partial_line_timeout=0.2, encoding=None):
 
 
 def read_stderr(stderr):
+    # type: (io.TextIOBase) -> None
     for line in line_gen(stderr.fileno()):
         add_stderr_text(line)
         write(wrap_color(line, "warning"), sys.stderr)
 
 
 def svn_gen(args, regex=None):
+    # type: (List[str], Optional[str]) -> Iterator[str]
     subprocess_args = [SVN] + args
     svn = subprocess_popen(
         subprocess_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -522,10 +564,12 @@ def svn_gen(args, regex=None):
 
 
 def svn_gen_cmd(cmd, args, regex=None):
+    # type: (str, List[str], Optional[str]) -> Iterator[str]
     return svn_gen([cmd] + args, regex)
 
 
 def svn_revert(args):
+    # type: (List[str]) -> None
     svn_call(["revert"] + args)
 
 
@@ -533,10 +577,12 @@ conflicting_lines = []
 
 
 def add_conflict_line(line):
+    # type: (str) -> None
     conflicting_lines.append(line)
 
 
 def display_notifications():
+    # type: () -> None
     if conflicting_lines:
         write_ln(
             wrap_color(
@@ -565,6 +611,7 @@ def display_notifications():
 
 
 def split_status(status_line):
+    # type: (str) -> Tuple[str, str]
     path = status_line[7:]
     if path.startswith(" "):
         path = path[1:]
@@ -572,6 +619,7 @@ def split_status(status_line):
 
 
 def svn_gen_status(status_args, modified=False, names_only=False):
+    # type: (List[str], bool, bool) -> Iterator[str]
     for line in svn_gen_cmd("st", status_args, regex=STATUS_REX):
         status, name = split_status(line)
         if names_only:
@@ -584,6 +632,7 @@ def svn_gen_status(status_args, modified=False, names_only=False):
 
 
 def svn_gen_info(info_args):
+    # type: (List[str]) -> Iterator[Dict[str, str]]
     info_dict = {}
     for line in svn_gen_cmd("info", info_args):
         if ":" in line:
@@ -595,6 +644,7 @@ def svn_gen_info(info_args):
 
 
 def svn_gen_diff(args, ignore_space_change=False):
+    # type: (List[str], bool) -> Iterator[str]
     cmd = ["diff"]
     if ignore_space_change:
         cmd.extend(["-x", "-b"])
@@ -602,6 +652,7 @@ def svn_gen_diff(args, ignore_space_change=False):
 
 
 def wrap_diff_lines(gen):
+    # type: (Iterable[str]) -> Iterator[str]
     for line in gen:
         c = line[:1]
         if c == "+":
@@ -614,11 +665,13 @@ def wrap_diff_lines(gen):
 
 
 def write_diff_lines(gen):
+    # type: (Iterable[str]) -> None
     for line in wrap_diff_lines(gen):
         write_ln(line)
 
 
 def wrap_status_lines(gen):
+    # type: (Iterable[str]) -> Iterator[str]
     for line in gen:
         c = line[:1]
         if (
@@ -646,16 +699,19 @@ def wrap_status_lines(gen):
 
 
 def write_status_lines(gen):
+    # type: (Iterable[str]) -> None
     for line in wrap_status_lines(gen):
         write_ln(line)
 
 
 def write_update_lines(gen):
+    # type: (Iterable[str]) -> None
     for line in wrap_status_lines(gen):
         write_ln(line)
 
 
 def wrap_log_lines(gen):
+    # type: (Iterable[str]) -> Iterator[str]
     log_re = re.compile(r"^(r\d+) \| (.*) \| (.*) \| (\d+ lines?)$")
     separator_line = 72 * "-"
 
@@ -681,20 +737,24 @@ def wrap_log_lines(gen):
 
 
 def write_log_lines(gen):
+    # type: (Iterable[str]) -> None
     for line in wrap_log_lines(gen):
         write_ln(line)
 
 
 class ExtDiffer:
     def reset(self):
+        # type: () -> None
         self.prop_index = 0
-        self.prop_lines = [[], []]
+        self.prop_lines = [[], []]  # type: List[List[str]]
 
     def __init__(self, ignore_space_change):
+        # type: (bool) -> None
         self.ignore_space_change = ignore_space_change
         self.reset()
 
     def add_line(self, line):
+        # type: (str) -> None
         if re.match(r"\s+- ", line):
             self.prop_index = 0
             line = line.lstrip()[2:]
@@ -706,11 +766,11 @@ class ExtDiffer:
         self.prop_lines[self.prop_index].append(line)
 
     def gen_diff_lines(self):
+        # type: () -> Iterator[str]
         new_prop_lines = self.prop_lines[1]
+        extra_line = None  # type: Optional[str]
         if new_prop_lines and new_prop_lines[-1].strip() == "":
             extra_line = new_prop_lines.pop()
-        else:
-            extra_line = None
         if self.prop_lines[0] or self.prop_lines[1]:
             delta = difflib.unified_diff(
                 self.prop_lines[0],
@@ -727,6 +787,7 @@ class ExtDiffer:
 
 
 def diff_filter(lines, ignore_space_change=False):
+    # type: (Iterable[str], bool) -> Iterator[str]
     ext_differ = ExtDiffer(ignore_space_change)
     in_ext = False
     expecting_first_line = False
@@ -758,7 +819,13 @@ def diff_filter(lines, ignore_space_change=False):
             yield d
 
 
-def common_prefix(seq1, seq2, parts_equal=lambda part1, part2: part1 == part2):
+def common_prefix(
+    seq1,  # type: Iterable[Any]
+    seq2,  # type: Iterable[Any]
+    parts_equal=lambda part1, part2: part1
+    == part2,  # type: Callable[[Any, Any], bool]
+):
+    # type: (...) -> List[Any]
     prefix = []
     for part1, part2 in zip(seq1, seq2):
         if parts_equal(part1, part2):
@@ -769,10 +836,12 @@ def common_prefix(seq1, seq2, parts_equal=lambda part1, part2: part1 == part2):
 
 
 def paths_equal(path1, path2):
+    # type: (str, str) -> bool
     return os.path.normcase(path1) == os.path.normcase(path2)
 
 
 def rel_path(wc_path, start_dir="."):
+    # type: (str, str) -> str
     dest_path_parts = os.path.abspath(wc_path).split(os.sep)
     start_dir_parts = os.path.abspath(start_dir).split(os.sep)
     common_parts_len = len(
@@ -788,6 +857,7 @@ def rel_path(wc_path, start_dir="."):
 
 
 def rel_walk(top):
+    # type: (str) -> Iterator[Tuple[str, List[str], List[str]]]
     for root, dirs, files in os.walk(top):
         for d in [".svn", "_svn"]:
             if d in dirs:
@@ -796,10 +866,12 @@ def rel_walk(top):
 
 
 def is_svn_dir(path):
+    # type: (str) -> bool
     return os.path.isdir(os.path.join(path, ".svn"))
 
 
 def svn_merge_raw(raw_root, wc_root):
+    # type: (str, str) -> None
     # @bug Cannot handle changing a file into a directory or vice-versa.
     if not os.path.isdir(raw_root):
         print("not a directory: %r" % raw_root)
@@ -850,10 +922,12 @@ def svn_merge_raw(raw_root, wc_root):
 
 
 def get_user():
+    # type: () -> str
     return get_environ("USER")
 
 
 def svn_url_split_peg(url):
+    # type: (str) -> Tuple[str, str]
     m = re.match(r"(.*)(@\d+)$", url)
     if m:
         new_url, peg = m.group(1), m.group(2)
@@ -863,6 +937,7 @@ def svn_url_split_peg(url):
 
 
 def svn_url_split(url):
+    # type: (str) -> Tuple[str, str, str]
     """Split into head, middle, tail.
 
     If middle can't be found, return (url, "", "").
@@ -890,6 +965,7 @@ def svn_url_split(url):
 
 
 def svn_url_join(head, middle, tail=""):
+    # type: (str, str, str) -> str
     url = head
     middle = middle.strip("/")
     tail = tail.strip("/")
@@ -906,20 +982,24 @@ def svn_url_join(head, middle, tail=""):
 
 
 def svn_url_split_head(url):
+    # type: (str) -> str
     head, middle, tail = svn_url_split(url)
     return head
 
 
 def svn_url_split_tail(url):
+    # type: (str) -> str
     head, middle, tail = svn_url_split(url)
     return tail
 
 
 def is_url(path):
+    # type: (str) -> bool
     return re.match(r"\w+://", path) is not None
 
 
 def svn_get_url(path):
+    # type: (str) -> str
     # If this is already a URL, return it unchanged.
     if is_url(path):
         return path
@@ -932,20 +1012,24 @@ def svn_get_url(path):
 
 
 def svn_get_url_split(path):
+    # type: (str) -> Tuple[str, str, str]
     return svn_url_split(svn_get_url(path))
 
 
 def svn_get_url_head(url):
+    # type: (str) -> str
     return svn_url_split_head(svn_get_url(url))
 
 
 def svn_get_url_tail(url):
+    # type: (str) -> str
     return svn_url_split_tail(svn_get_url(url))
 
 
 def svn_url_map(url):
+    # type: (str) -> str
     debug_ln("mapping %s" % repr(url))
-    url_history = set()
+    url_history = set()  # type: Set[str]
     aliases = get_aliases()
     while True:
         m = re.match(
@@ -1210,6 +1294,7 @@ for arg in one_arg_switches:
 
 
 def get_switch_arg_count(s):
+    # type: (str) -> int
     try:
         return switch_to_arg_count_map[s]
     except KeyError:
@@ -1217,6 +1302,7 @@ def get_switch_arg_count(s):
 
 
 def url_map_args(cmd, pos_args):
+    # type: (str, List[str]) -> List[str]
     if cmd in "propset pset ps".split():
         num_unmappable_pos_args = 2
     elif (
@@ -1235,6 +1321,7 @@ def url_map_args(cmd, pos_args):
 
 
 def adjust_url_for_wc_path(url, wc_path):
+    # type: (str, str) -> str
     new_url = url
     url_base, url_peg = svn_url_split_peg(url)
     if url_base.endswith("/."):
@@ -1256,6 +1343,7 @@ def adjust_url_for_wc_path(url, wc_path):
 
 
 def help_wrap(summary=False):
+    # type: (bool) -> None
     if summary:
         write(
             """
@@ -1356,6 +1444,7 @@ For more details, see the README.rst file distributed with svnwrap.
 
 
 def parse_args():
+    # type: () -> Tuple[List[str], List[str]]
     """Return (switch_args, pos_args)."""
 
     debug_arg_parsing = False
@@ -1394,10 +1483,9 @@ def parse_args():
         elif arg == "--ie":
             args.insert(0, "--ignore-externals")
         elif arg.startswith("--"):
+            attached_arg = None  # type: Optional[str]
             if "=" in arg:
                 arg, attached_arg = arg.split("=", 1)
-            else:
-                attached_arg = None
             switch_arg_count = get_switch_arg_count(arg)
             switch_args.append(arg)
             if attached_arg is not None:
@@ -1434,6 +1522,7 @@ def parse_args():
 
 
 def setup_svn_editor():
+    # type: () -> None
     """Set SVN_EDITOR to restore stdout/stderr and chain to original editor."""
 
     config = subversion_config()
@@ -1495,6 +1584,7 @@ def setup_svn_editor():
 
 
 def setup_pager():
+    # type: () -> None
     if not use_pager:
         return
 
@@ -1537,6 +1627,7 @@ def setup_pager():
 
     @atexit.register
     def killpager():
+        # type: () -> None
         if hasattr(signal, "SIGINT"):
             signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -1545,22 +1636,23 @@ def setup_pager():
         os.dup2(stderr, sys.stderr.fileno())
 
         # Wait for the pager to exit.
-        pager.stdin.close()
-        pager.wait()
+        if pager is not None:
+            pager.stdin.close()
+            pager.wait()
 
 
 def main():
+    # type: () -> None
     # Ensure config file exists.
     svnwrap_config()
     read_color_scheme()
     setup_svn_editor()
 
     switch_args, pos_args = parse_args()
+    cmd = None  # type: Optional[str]
     if pos_args:
         cmd = pos_args.pop(0)
         pos_args = url_map_args(cmd, pos_args)
-    else:
-        cmd = None
     args = switch_args + pos_args
 
     if cmd is None:
@@ -1739,6 +1831,7 @@ def main():
 
 
 def main_with_svn_error_handling():
+    # type: () -> None
     exit_status = 0
     try:
         main()
@@ -1756,6 +1849,7 @@ def main_with_svn_error_handling():
 
 
 def color_test():
+    # type: () -> None
     for color in sorted(color_dict):
         write_ln(wrap_color("This is %s" % color, color))
 

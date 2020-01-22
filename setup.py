@@ -3,6 +3,10 @@
 
 import setuptools
 import sys
+try:
+    from typing import Any, IO
+except ImportError:
+    pass
 
 sys_version = tuple(sys.version_info[:2])
 min_version = (2, 7)
@@ -14,6 +18,7 @@ if sys_version < min_version:
 
 
 def open_text(name):
+    # type: (str) -> IO[Any]
     if sys_version == (2, 7):
         return open(name)
     return open(name, encoding="utf-8")
