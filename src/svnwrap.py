@@ -52,6 +52,44 @@ __version__ = "0.8.0"
 
 platform_is_windows = platform.system() == "Windows"
 
+
+def color_supported():
+    # type: () -> bool
+    if platform_is_windows:
+        try:
+            import colorama
+
+            colorama.init()
+        except ImportError:
+            return False
+    return True
+
+
+class State:
+    def __init__(self):
+        # type: () -> None
+
+        # True when debugging.
+        self.debugging = False
+
+        # Path of Subversion client executable.
+        self.SVN = "svn"
+
+        # True if stdout is a TTY.
+        self.isatty = os.isatty(sys.stdout.fileno())
+
+        # True to use color highlighting on output.
+        self.using_color = self.isatty and color_supported()
+
+        # True to feed output through a pager.
+        self.use_pager = self.isatty
+
+        # Will contain a subprocess.Popen object, if a pager is in use.
+        self.pager = None  # type: Optional[subprocess.Popen]
+
+
+state = State()
+
 sample_ini_contents = """
 [aliases]
 # Aliases are used at the start of a URL.  They are replaced by their
@@ -90,13 +128,10 @@ sample_ini_contents = """
 ## use_shell = false
 """
 
-# True when debugging.
-debugging = False
-
 
 def debug(s):
     # type: (str) -> None
-    if debugging:
+    if state.debugging:
         sys.stdout.write(s)
 
 
@@ -208,8 +243,6 @@ UPDATE_REX = (
 )
 CHECKOUT_REX = r"^Fetching external|^\s*$"
 
-SVN = "svn"
-
 color_names = [
     "black",
     "red",
@@ -307,27 +340,9 @@ def read_color_scheme():
         color_scheme[key] = (foreground, background)
 
 
-using_color = os.isatty(sys.stdout.fileno())
-if using_color and platform_is_windows:
-    try:
-        import colorama
-
-        colorama.init()
-    except ImportError:
-        using_color = False
-
-if os.isatty(sys.stdout.fileno()):
-    use_pager = True
-else:
-    use_pager = False
-
-# Will contain a subprocess.Popen object, if a pager is in use.
-pager = None  # type: Optional[subprocess.Popen]
-
-
 def set_color_num(color_num):
     # type: (int) -> str
-    if using_color:
+    if state.using_color:
         return "\x1b[%dm" % color_num
     else:
         return ""
@@ -456,7 +471,7 @@ def svn_call(args=None):
     # type: (Optional[List[str]]) -> None
     if args is None:
         args = []
-    subprocess_args = [SVN] + args
+    subprocess_args = [state.SVN] + args
     ret_code = subprocess_call(subprocess_args)
     if ret_code != 0:
         raise SvnError(
@@ -534,7 +549,7 @@ def read_stderr(stderr):
 
 def svn_gen(args, regex=None):
     # type: (List[str], Optional[str]) -> Iterator[str]
-    subprocess_args = [SVN] + args
+    subprocess_args = [state.SVN] + args
     svn = subprocess_popen(
         subprocess_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -1459,29 +1474,25 @@ def parse_args():
         if arg == "--debug-args":
             debug_arg_parsing = True
         elif arg == "--debug":
-            global debugging
-            debugging = True
+            state.debugging = True
         elif arg == "--svn":
-            global SVN
             if not args:
                 raise SvnError("missing argument for switch %s" % arg)
-            SVN = os.path.abspath(args.pop(0))
+            state.SVN = os.path.abspath(args.pop(0))
         elif arg == "--color":
-            global using_color
             if args:
                 color_flag = args.pop(0)
             else:
                 color_flag = ""
             if color_flag == "on":
-                using_color = True
+                state.using_color = True
             elif color_flag == "off":
-                using_color = False
+                state.using_color = False
             elif color_flag != "auto":
                 help_wrap(summary=True)
                 sys.exit()
         elif arg == "--no-pager":
-            global use_pager
-            use_pager = False
+            state.use_pager = False
         elif arg == "--ie":
             args.insert(0, "--ignore-externals")
         elif arg.startswith("--"):
@@ -1587,7 +1598,7 @@ def setup_svn_editor():
 
 def setup_pager():
     # type: () -> None
-    if not use_pager:
+    if not state.use_pager:
         return
 
     config = svnwrap_config()
@@ -1603,14 +1614,13 @@ def setup_pager():
     if not enabled:
         return
 
-    global pager
     try:
         if use_shell:
-            pager = subprocess.Popen(
+            state.pager = subprocess.Popen(
                 pager_cmd, stdin=subprocess.PIPE, shell=True
             )
         else:
-            pager = subprocess.Popen(
+            state.pager = subprocess.Popen(
                 shlex.split(pager_cmd), stdin=subprocess.PIPE
             )
     except OSError:
@@ -1623,9 +1633,9 @@ def setup_pager():
     stderr = os.dup(sys.stderr.fileno())
 
     # Redirect stdout and stderr into the pager.
-    os.dup2(pager.stdin.fileno(), sys.stdout.fileno())
+    os.dup2(state.pager.stdin.fileno(), sys.stdout.fileno())
     if sys.stderr.isatty():
-        os.dup2(pager.stdin.fileno(), sys.stderr.fileno())
+        os.dup2(state.pager.stdin.fileno(), sys.stderr.fileno())
 
     @atexit.register
     def killpager():
@@ -1638,9 +1648,9 @@ def setup_pager():
         os.dup2(stderr, sys.stderr.fileno())
 
         # Wait for the pager to exit.
-        if pager is not None:
-            pager.stdin.close()
-            pager.wait()
+        if state.pager is not None:
+            state.pager.stdin.close()
+            state.pager.wait()
 
 
 def main():
