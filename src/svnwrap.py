@@ -1374,6 +1374,7 @@ def help_wrap(summary=False):
         write(
             """
 Type 'svn helpwrap' for help on svnwrap extensions.
+Type 'svn readme' to view the svnwrap README.rst file.
 """
         )
     else:
@@ -1408,6 +1409,7 @@ pge               - propget svn:externals
 pgi               - propget svn:ignore
 url               - show URL as received from "svn info"
 helpwrap          - this help
+readme            - show svnwrap README.rst
 
 svnwrap options:
   --color on|off|auto       use color in output (defaults to auto)
@@ -1460,7 +1462,8 @@ NOTE: To avoid URL adjustment, append "/." to the end of the URL, e.g.:
   svn switch ^/branches/somebranch/.
 
 If your editor isn't launching correctly, setup SVN_EDITOR.
-For more details, see the README.rst file distributed with svnwrap.
+For more details, see the README.rst file distributed with svnwrap
+(displayable via 'svn readme').
 
 """.strip()
             % dict(
@@ -1871,6 +1874,27 @@ def do_cmd_log(args):
     write_log_lines(svn_gen_cmd("log", args))
 
 
+def readme():
+    # type: () -> None
+    setup_pager()
+    import pkg_resources
+    import email
+    import textwrap
+
+    try:
+        dist = pkg_resources.get_distribution("svnwrap")
+        meta = dist.get_metadata(dist.PKG_INFO)
+    except (pkg_resources.DistributionNotFound, FileNotFoundError):
+        print("Cannot access README (try installing via pip or setup.py)")
+        return
+    msg = email.message_from_string(meta)
+    desc = msg.get("Description", "No README found")
+    if "\n" in desc:
+        first, rest = desc.split("\n", 1)
+        desc = "\n".join([first, textwrap.dedent(rest)])
+    print(desc)
+
+
 def main():
     # type: () -> None
     # Ensure config file exists.
@@ -1902,6 +1926,9 @@ def main():
         setup_pager()
         svn_call(["help"])
         help_wrap(summary=True)
+
+    elif cmd == "readme":
+        readme()
 
     else:
         if cmd in subcommand_aliases:
