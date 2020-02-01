@@ -20,6 +20,7 @@ import subprocess
 import sys
 import textwrap
 import threading
+
 try:
     from typing import (
         Any,
@@ -1044,6 +1045,19 @@ def svn_get_url_tail(url):
 
 def svn_url_map(url):
     # type: (str) -> str
+
+    # Maps "key" into head-relative path (starting at repository root).
+    head_map = {
+        "tr": "trunk",
+        "br": "branches",
+        "tag": "tags",
+        "rel": "tags/release",
+        "gb": "branches/guests",
+        "gt": "tags/guests",
+        "mb": "branches/guests/",
+        "mt": "tags/guests/",
+    }
+
     debug_ln("mapping %s" % repr(url))
     url_history = set()  # type: Set[str]
     aliases = get_aliases()
@@ -1086,26 +1100,10 @@ def svn_url_map(url):
                 url = get_environ("P")
             elif key == "pp":
                 url = get_environ("PP")
-            elif key == "tr":
-                url = svn_url_join(svn_get_url_head(before), "trunk")
-            elif key == "br":
-                url = svn_url_join(svn_get_url_head(before), "branches")
-            elif key == "tag":
-                url = svn_url_join(svn_get_url_head(before), "tags")
-            elif key == "rel":
-                url = svn_url_join(svn_get_url_head(before), "tags/release")
-            elif key == "gb":
-                url = svn_url_join(svn_get_url_head(before), "branches/guests")
-            elif key == "gt":
-                url = svn_url_join(svn_get_url_head(before), "tags/guests")
-            elif key == "mb":
-                url = svn_url_join(
-                    svn_get_url_head(before), "branches/guests/" + get_user()
-                )
-            elif key == "mt":
-                url = svn_url_join(
-                    svn_get_url_head(before), "tags/guests/" + get_user()
-                )
+            elif key in head_map:
+                url = svn_url_join(svn_get_url_head(before), head_map[key])
+                if key in ("mb", "mt"):
+                    url = svn_url_join(url, get_user())
             elif key == "ws":
                 ws_head, ws_middle, ignored_tail = svn_get_url_split(before)
                 if not ws_middle:
@@ -1198,6 +1196,18 @@ update
 upgrade
 """.split()
 )
+
+subcommand_aliases = {
+    "st": "status",
+    "stat": "status",
+    "up": "update",
+    "co": "checkout",
+    "di": "diff",
+    "ediff": "diff",
+    "ebdiff": "bdiff",
+    "kdiff": "kdiff3",
+    "sw": "switch",
+}
 
 zero_arg_switches = set(
     """
@@ -1460,6 +1470,56 @@ For more details, see the README.rst file distributed with svnwrap.
         )
 
 
+def parse_switch(switch, args):
+    # type: (str, List[str]) -> List[str]
+    attached_arg = None  # type: Optional[str]
+    if switch == "-":
+        raise SvnError("invalid switch '-'")
+    elif switch.startswith("--"):
+        if "=" in switch:
+            switch, attached_arg = switch.split("=", 1)
+    else:
+        switch, rest = switch[:2], switch[2:]
+        if rest:
+            # What follows is either another switch or an attached_arg.
+            if get_switch_arg_count(switch) > 0:
+                attached_arg = rest
+            elif rest.startswith("-"):
+                raise SvnError("Invalid short switch '-'")
+            else:
+                # Retain additional switches for next pass.
+                args.insert(0, "-" + rest)
+    switch_args = [switch]
+    switch_arg_count = get_switch_arg_count(switch)
+    if attached_arg is not None:
+        if switch_arg_count == 0:
+            raise SvnError("switch %s takes no arguments" % switch)
+        args.insert(0, attached_arg)
+    if switch_arg_count > len(args):
+        raise SvnError(
+            "switch %s requires %d argument%s"
+            % (arg, switch_arg_count, switch_arg_count > 1 and "s" or "")
+        )
+    switch_args.extend(args[:switch_arg_count])
+    del args[:switch_arg_count]
+    return switch_args
+
+
+def parse_args_color(args):
+    # type: (List[str]) -> None
+    if args:
+        color_flag = args.pop(0)
+    else:
+        color_flag = ""
+    if color_flag == "on":
+        state.using_color = True
+    elif color_flag == "off":
+        state.using_color = False
+    elif color_flag != "auto":
+        help_wrap(summary=True)
+        sys.exit()
+
+
 def parse_args():
     # type: () -> Tuple[List[str], List[str]]
     """Return (switch_args, pos_args)."""
@@ -1469,7 +1529,6 @@ def parse_args():
     pos_args = []
     args = sys.argv[1:]
     while args:
-        switch_arg_count = 0
         arg = args.pop(0)
         if arg == "--debug-args":
             debug_arg_parsing = True
@@ -1480,53 +1539,15 @@ def parse_args():
                 raise SvnError("missing argument for switch %s" % arg)
             state.SVN = os.path.abspath(args.pop(0))
         elif arg == "--color":
-            if args:
-                color_flag = args.pop(0)
-            else:
-                color_flag = ""
-            if color_flag == "on":
-                state.using_color = True
-            elif color_flag == "off":
-                state.using_color = False
-            elif color_flag != "auto":
-                help_wrap(summary=True)
-                sys.exit()
+            parse_args_color(args)
         elif arg == "--no-pager":
             state.use_pager = False
         elif arg == "--ie":
             args.insert(0, "--ignore-externals")
-        elif arg.startswith("--"):
-            attached_arg = None  # type: Optional[str]
-            if "=" in arg:
-                arg, attached_arg = arg.split("=", 1)
-            switch_arg_count = get_switch_arg_count(arg)
-            switch_args.append(arg)
-            if attached_arg is not None:
-                if switch_arg_count == 0:
-                    raise SvnError("switch %s takes no arguments" % arg)
-                args.insert(0, attached_arg)
         elif arg.startswith("-"):
-            if arg == "-":
-                raise SvnError("invalid switch '-'")
-            # Split arg into one-character switches.
-            s = arg[1:]
-            while s:
-                arg = "-" + s[0]
-                s = s[1:]
-                switch_arg_count = get_switch_arg_count(arg)
-                switch_args.append(arg)
-                if switch_arg_count and s:
-                    args.insert(0, s)
-                    s = ""
+            switch_args.extend(parse_switch(arg, args))
         else:
             pos_args.append(arg)
-        if switch_arg_count > len(args):
-            raise SvnError(
-                "switch %s requires %d argument%s"
-                % (arg, switch_arg_count, switch_arg_count > 1 and "s" or "")
-            )
-        switch_args.extend(args[:switch_arg_count])
-        del args[:switch_arg_count]
     if debug_arg_parsing:
         write_ln("switch_args = %s" % repr(switch_args))
         write_ln("pos_args = %s" % repr(pos_args))
@@ -1653,6 +1674,203 @@ def setup_pager():
             state.pager.wait()
 
 
+def do_cmd_helpwrap(args):
+    # type: (List[str]) -> None
+    setup_pager()
+    help_wrap()
+
+
+def do_cmd_status(args):
+    # type: (List[str]) -> None
+    write_status_lines(svn_gen_status(args))
+
+
+def do_cmd_stnames(args):
+    # type: (List[str]) -> None
+    write_lines(svn_gen_status(args, names_only=True))
+
+
+def do_cmd_stmod(args):
+    # type: (List[str]) -> None
+    write_lines(svn_gen_status(args, modified=True))
+
+
+def do_cmd_stmodroot(args):
+    # type: (List[str]) -> None
+    d = {}
+    for line in svn_gen_status(args, modified=True):
+        line = re.sub(r"/.*", "", line)
+        d[line] = 1
+    for name in sorted(d):
+        write_ln(name)
+
+
+def do_cmd_stmodrevert(args):
+    # type: (List[str]) -> None
+    mods = [line.rstrip() for line in svn_gen_status(args, modified=True)]
+    svn_revert(mods)
+
+
+def do_cmd_update(args):
+    # type: (List[str]) -> None
+    write_update_lines(svn_gen_cmd("update", args, regex=UPDATE_REX))
+
+
+def do_cmd_checkout(args):
+    # type: (List[str]) -> None
+    write_update_lines(svn_gen_cmd("checkout", args, regex=CHECKOUT_REX))
+
+
+def do_cmd_diff(args):
+    # type: (List[str]) -> None
+    setup_pager()
+    write_diff_lines(diff_filter(svn_gen_diff(args)))
+
+
+def do_cmd_bdiff(args):
+    # type: (List[str]) -> None
+    setup_pager()
+    write_diff_lines(
+        diff_filter(
+            svn_gen_diff(args, ignore_space_change=True),
+            ignore_space_change=True,
+        )
+    )
+
+
+def do_cmd_kdiff3(args):
+    # type: (List[str]) -> None
+    svn_call(["diff", "--diff-cmd", "kdiff3", "-x", "--qall"] + args)
+
+
+def do_cmd_pdiff(args):
+    # type: (List[str]) -> None
+    setup_pager()
+    write_diff_lines(
+        diff_filter(
+            svn_gen_diff(
+                "--diff-cmd diff -x -U1000000 --patch-compatible".split()
+                + args
+            )
+        )
+    )
+
+
+def do_cmd_mergeraw(args):
+    # type: (List[str]) -> None
+    if not args or len(args) > 2:
+        write_ln("mergeraw RAWPATH [WCPATH]")
+        sys.exit(1)
+    raw_root = args.pop(0)
+    if args:
+        wc_root = args.pop(0)
+    else:
+        wc_root = "."
+    svn_merge_raw(raw_root, wc_root)
+
+
+def do_cmd_ee(args):
+    # type: (List[str]) -> None
+    if not args:
+        args.append(".")
+    svn_call("propedit svn:externals".split() + args)
+
+
+def do_cmd_ei(args):
+    # type: (List[str]) -> None
+    if not args:
+        args.append(".")
+    svn_call("propedit svn:ignore".split() + args)
+
+
+def do_cmd_pge(args):
+    # type: (List[str]) -> None
+    if not args:
+        args.append(".")
+    svn_call("propget svn:externals --strict".split() + args)
+
+
+def do_cmd_pgi(args):
+    # type: (List[str]) -> None
+    if not args:
+        args.append(".")
+    svn_call("propget svn:ignore".split() + args)
+
+
+def do_cmdx_url(switch_args, pos_args):
+    # type: (List[str], List[str]) -> None
+    if pos_args:
+        for arg in pos_args:
+            write_ln(svn_get_url(arg))
+    else:
+        write_ln(svn_get_url("."))
+
+
+def do_cmdx_br(switch_args, pos_args):
+    # type: (List[str], List[str]) -> None
+    if len(pos_args) != 1:
+        raise SvnError("br takes exactly one URL")
+    # Default to branches of current URL, but absolute URL following
+    # will override.
+    branch = svn_url_map("br:" + pos_args[0])
+    trunk = svn_url_map(branch + "/tr:")
+    cp_args = ["cp", trunk, branch] + switch_args
+    svn_call(cp_args)
+
+
+def do_cmdx_switch(switch_args, pos_args):
+    # type: (List[str], List[str]) -> None
+    if 1 <= len(pos_args) <= 2 and "--relocate" not in switch_args:
+        url = pos_args.pop(0)
+        if pos_args:
+            wc_path = pos_args.pop(0)
+        else:
+            wc_path = "."
+        new_url = adjust_url_for_wc_path(url, wc_path)
+        args = switch_args + [new_url, wc_path]
+    write_update_lines(svn_gen_cmd("switch", args, regex=UPDATE_REX))
+
+
+def do_cmdx_merge(switch_args, pos_args):
+    # type: (List[str], List[str]) -> None
+    if len(pos_args) > 1 and not is_url(pos_args[-1]):
+        wc_path = pos_args.pop()
+    else:
+        wc_path = "."
+    urls = [adjust_url_for_wc_path(url, wc_path) for url in pos_args]
+    args = switch_args + urls + [wc_path]
+    # Using svn_gen_cmd() during merge operation allows direct-to-tty
+    # menu options to appear out-of-order with respect to
+    # stdout-through-the-pipe.  So, for example, when a conflict causes an
+    # interactive menu to appear, pressing "df" will generate the diff in
+    # the wrong order relative to the menu.  In the example below, the
+    # menu starting with "Select" should appear after the actual diff,
+    # but due to lag through the pipe, the menu tends to show up first:
+    #
+    # Select: (p) postpone, (df) show diff, (e) edit file, (m) merge,
+    #         (r) mark resolved, (mc) my side of conflict,
+    #         (tc) their side of conflict, (s) show all options: --- \
+    #         README.txt.working       - MINE
+    # +++ README.txt  - MERGED
+    # @@ -1,3 +1,7 @@
+    # one
+    # +<<<<<<< .working
+    # from branch1.
+    # +=======
+    # +from trunk
+    # +>>>>>>> .merge-right.r5
+    # three
+
+    # write_update_lines(svn_gen_cmd(cmd, args, regex=UPDATE_REX))
+    svn_call(["merge"] + args)
+
+
+def do_cmd_log(args):
+    # type: (List[str]) -> None
+    setup_pager()
+    write_log_lines(svn_gen_cmd("log", args))
+
+
 def main():
     # type: () -> None
     # Ensure config file exists.
@@ -1685,161 +1903,17 @@ def main():
         svn_call(["help"])
         help_wrap(summary=True)
 
-    elif cmd == "helpwrap":
-        setup_pager()
-        help_wrap()
-
-    elif cmd == "st" or cmd == "stat" or cmd == "status":
-        write_status_lines(svn_gen_status(args))
-
-    elif cmd == "stnames":
-        write_lines(svn_gen_status(args, names_only=True))
-
-    elif cmd == "stmod":
-        write_lines(svn_gen_status(args, modified=True))
-
-    elif cmd == "stmodroot":
-        d = {}
-        for line in svn_gen_status(args, modified=True):
-            line = re.sub(r"/.*", "", line)
-            d[line] = 1
-        for name in sorted(d):
-            write_ln(name)
-
-    elif cmd == "stmodrevert":
-        mods = [line.rstrip() for line in svn_gen_status(args, modified=True)]
-        svn_revert(mods)
-
-    elif cmd in ["up", "update"]:
-        write_update_lines(svn_gen_cmd(cmd, args, regex=UPDATE_REX))
-
-    elif cmd in ["co", "checkout"]:
-        write_update_lines(svn_gen_cmd(cmd, args, regex=CHECKOUT_REX))
-
-    elif cmd in ["diff", "ediff", "di"]:
-        setup_pager()
-        write_diff_lines(diff_filter(svn_gen_diff(args)))
-
-    elif cmd in ["bdiff", "ebdiff"]:
-        setup_pager()
-        write_diff_lines(
-            diff_filter(
-                svn_gen_diff(args, ignore_space_change=True),
-                ignore_space_change=True,
-            )
-        )
-
-    elif cmd in ["kdiff", "kdiff3"]:
-        svn_call(["diff", "--diff-cmd", "kdiff3", "-x", "--qall"] + args)
-
-    elif cmd in ["pdiff"]:
-        setup_pager()
-        write_diff_lines(
-            diff_filter(
-                svn_gen_diff(
-                    "--diff-cmd diff -x -U1000000 --patch-compatible".split()
-                    + args
-                )
-            )
-        )
-
-    elif cmd == "mergeraw":
-        if not args or len(args) > 2:
-            write_ln("mergeraw RAWPATH [WCPATH]")
-            sys.exit(1)
-        raw_root = args.pop(0)
-        if args:
-            wc_root = args.pop(0)
-        else:
-            wc_root = "."
-        svn_merge_raw(raw_root, wc_root)
-
-    elif cmd == "ee":
-        if not args:
-            args.append(".")
-        svn_call("propedit svn:externals".split() + args)
-
-    elif cmd == "ei":
-        if not args:
-            args.append(".")
-        svn_call("propedit svn:ignore".split() + args)
-
-    elif cmd == "pge":
-        if not args:
-            args.append(".")
-        svn_call("propget svn:externals --strict".split() + args)
-
-    elif cmd == "pgi":
-        if not args:
-            args.append(".")
-        svn_call("propget svn:ignore".split() + args)
-
-    elif cmd == "url":
-        if pos_args:
-            for arg in pos_args:
-                write_ln(svn_get_url(arg))
-        else:
-            write_ln(svn_get_url("."))
-
-    elif cmd == "br":
-        if len(pos_args) != 1:
-            raise SvnError("br takes exactly one URL")
-        # Default to branches of current URL, but absolute URL following
-        # will override.
-        branch = svn_url_map("br:" + pos_args[0])
-        trunk = svn_url_map(branch + "/tr:")
-        cp_args = ["cp", trunk, branch] + switch_args
-        svn_call(cp_args)
-
-    elif cmd in ["sw", "switch"]:
-        if 1 <= len(pos_args) <= 2 and "--relocate" not in switch_args:
-            url = pos_args.pop(0)
-            if pos_args:
-                wc_path = pos_args.pop(0)
-            else:
-                wc_path = "."
-            new_url = adjust_url_for_wc_path(url, wc_path)
-            args = switch_args + [new_url, wc_path]
-        write_update_lines(svn_gen_cmd(cmd, args, regex=UPDATE_REX))
-
-    elif cmd == "merge":
-        if len(pos_args) > 1 and not is_url(pos_args[-1]):
-            wc_path = pos_args.pop()
-        else:
-            wc_path = "."
-        urls = [adjust_url_for_wc_path(url, wc_path) for url in pos_args]
-        args = switch_args + urls + [wc_path]
-        # Using svn_gen_cmd() during merge operation allows direct-to-tty
-        # menu options to appear out-of-order with respect to
-        # stdout-through-the-pipe.  So, for example, when a conflict causes an
-        # interactive menu to appear, pressing "df" will generate the diff in
-        # the wrong order relative to the menu.  In the example below, the
-        # menu starting with "Select" should appear after the actual diff,
-        # but due to lag through the pipe, the menu tends to show up first:
-        #
-        # Select: (p) postpone, (df) show diff, (e) edit file, (m) merge,
-        #         (r) mark resolved, (mc) my side of conflict,
-        #         (tc) their side of conflict, (s) show all options: --- \
-        #         README.txt.working       - MINE
-        # +++ README.txt  - MERGED
-        # @@ -1,3 +1,7 @@
-        # one
-        # +<<<<<<< .working
-        # from branch1.
-        # +=======
-        # +from trunk
-        # +>>>>>>> .merge-right.r5
-        # three
-
-        # write_update_lines(svn_gen_cmd(cmd, args, regex=UPDATE_REX))
-        svn_call([cmd] + args)
-
-    elif cmd == "log":
-        setup_pager()
-        write_log_lines(svn_gen_cmd(cmd, args))
-
     else:
-        svn_call([cmd] + args)
+        if cmd in subcommand_aliases:
+            cmd = subcommand_aliases[cmd]
+        func = "do_cmd_" + cmd
+        funcx = "do_cmdx_" + cmd
+        if func in globals():
+            globals()[func](args)
+        elif funcx in globals():
+            globals()[funcx](switch_args, pos_args)
+        else:
+            svn_call([cmd] + args)
 
 
 def main_with_svn_error_handling():
