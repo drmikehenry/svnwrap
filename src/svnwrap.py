@@ -149,6 +149,14 @@ class PagerClosed(Exception):
     pass
 
 
+def remove_chars(s, chars):
+    # type: (str, str) -> str
+    # Remove from all individual characters in chars.
+    for c in chars:
+        s = s.replace(c, "")
+    return s
+
+
 def get_environ(env_var, default=None):
     # type: (str, str) -> str
     try:
@@ -1125,92 +1133,80 @@ def svn_url_map(url):
     return url
 
 
-subcommands = set(
-    """
-?
+def make_commands(commands_text):
+    # type: (str) -> Tuple[Set[str], Dict[str, str]]
+    commands = set()
+    aliases = {}
+    for line in commands_text.strip().splitlines():
+        parts = remove_chars(line.strip(), "(,)").split()
+        cmd = parts[0]
+        rest = parts[1:]
+        commands.add(cmd)
+        for alias in rest:
+            aliases[alias] = cmd
+    return commands, aliases
+
+
+# From "svn help":
+builtin_commands_text = """
 add
-ann
-annotate
-blame
+auth
+blame (praise, annotate, ann)
 cat
-changelist
-checkout
-ci
-cl
+changelist (cl)
+checkout (co)
 cleanup
-co
-commit
-copy
-cp
-del
-delete
-di
-diff
+commit (ci)
+copy (cp)
+delete (del, remove, rm)
+diff (di)
 export
-h
-help
+help (?, h)
 import
 info
-list
+list (ls)
 lock
 log
-ls
 merge
 mergeinfo
 mkdir
-move
-mv
+move (mv, rename, ren)
 patch
-pd
-pdel
-pe
-pedit
-pg
-pget
-pl
-plist
-praise
-propdel
-propedit
-propget
-proplist
-propset
-ps
-pset
+propdel (pdel, pd)
+propedit (pedit, pe)
+propget (pget, pg)
+proplist (plist, pl)
+propset (pset, ps)
 relocate
-remove
-ren
-rename
 resolve
 resolved
 revert
-rm
-st
-stat
-status
-sw
-switch
+status (stat, st)
+switch (sw)
 unlock
-up
-update
+update (up)
 upgrade
-""".split()
-)
+"""
 
-subcommand_aliases = {
-    "st": "status",
-    "stat": "status",
-    "up": "update",
-    "co": "checkout",
-    "di": "diff",
-    "ediff": "diff",
-    "ebdiff": "bdiff",
-    "kdiff": "kdiff3",
-    "sw": "switch",
-}
+extra_commands_text = """
+diff (ediff)
+bdiff (ebdiff)
+kdiff3 (kdiff)
+"""
+
+builtin_commands, builtin_command_aliases = make_commands(
+    builtin_commands_text
+)
+extra_commands, extra_command_aliases = make_commands(extra_commands_text)
+
+all_commands = builtin_commands.union(extra_commands)
+all_command_aliases = builtin_command_aliases.copy()
+all_command_aliases.update(extra_command_aliases)
+
 
 zero_arg_switches = set(
     """
+--adds-as-modification
 --allow-mixed-revisions
 --auto-props
 --diff
@@ -1220,6 +1216,7 @@ zero_arg_switches = set(
 --force-log
 --git
 --help
+--human-readable
 --ignore-ancestry
 --ignore-externals
 --ignore-keywords
@@ -1230,17 +1227,20 @@ zero_arg_switches = set(
 --internal-diff
 --keep-changelists
 --keep-local
+--log
 --no-auth-cache
 --no-auto-props
 --no-diff-added
 --no-diff-deleted
 --no-ignore
+--no-newline
 --no-unlock
 --non-interactive
 --non-recursive
 --notice-ancestry
 --parents
 --patch-compatible
+--pin-externals
 --properties-only
 --quiet
 --record-only
@@ -1248,22 +1248,29 @@ zero_arg_switches = set(
 --reintegrate
 --relocate
 --remove
+--remove-added
+--remove-ignored
+--remove-unversioned
 --reverse-diff
 --revprop
 --show-copies-as-adds
 --show-inherited-props
+--show-item
+--show-passwords
 --show-updates
 --stop-on-copy
 --strict
 --summarize
 --trust-server-cert
 --use-merge-history
+--vacuum-pristines
 --verbose
 --version
 --with-all-revprops
 --with-no-revprops
 --xml
 -?
+-H
 -N
 -R
 -g
@@ -1467,8 +1474,7 @@ For more details, see the README.rst file distributed with svnwrap
 
 """.strip()
             % dict(
-                svnwrap_ini_path=get_svnwrap_ini_path(),
-                version=__version__,
+                svnwrap_ini_path=get_svnwrap_ini_path(), version=__version__,
             )
         )
 
@@ -1895,6 +1901,38 @@ def readme():
     print(desc)
 
 
+def show_new_switches():
+    # type: () -> None
+    all_switches = zero_arg_switches.union(one_arg_switches)
+
+    for cmd in sorted(builtin_commands):
+        switches = set()
+
+        # Expecting help lines of the form::
+        #
+        #  --targets ARG            : pass contents of file ARG...
+        #  -N [--non-recursive]     : obsolete; same as --depth=empty
+        #  --depth ARG              : limit operation by depth ARG...
+        #
+        # Throw away the colon and beyond, ditch square brackets, and
+        # split one whitespace.  Keep only words beginning with a hyphen.
+        # Skip lines with too much leading whitespace.
+        for line in svn_gen_cmd("help", [cmd]):
+            if line.startswith("     "):
+                # Too much leading whitespace.
+                continue
+            line = line.strip()
+            if ":" in line and line.startswith("-"):
+                line = line.split(":")[0]
+                for part in remove_chars(line, "[]").split():
+                    if part.startswith("-"):
+                        switches.add(part)
+
+        new_switches = switches.difference(all_switches)
+        if new_switches:
+            print("New switches for {}: {}".format(cmd, new_switches))
+
+
 def main():
     # type: () -> None
     # Ensure config file exists.
@@ -1908,6 +1946,9 @@ def main():
         cmd = pos_args.pop(0)
         pos_args = url_map_args(cmd, pos_args)
     args = switch_args + pos_args
+
+    if cmd is not None:
+        cmd = all_command_aliases.get(cmd, cmd)
 
     if cmd is None:
         # No positional arguments were given.  Newer svn clients return failure
@@ -1930,9 +1971,10 @@ def main():
     elif cmd == "readme":
         readme()
 
+    elif cmd == "shownewswitches":
+        show_new_switches()
+
     else:
-        if cmd in subcommand_aliases:
-            cmd = subcommand_aliases[cmd]
         func = "do_cmd_" + cmd
         funcx = "do_cmdx_" + cmd
         if func in globals():
