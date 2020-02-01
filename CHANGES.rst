@@ -4,6 +4,22 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.8.0
+=============
+
+- Update Python-related tooling (black, mypy with type-hinting comments, pytest,
+  tox, coverage).
+
+- Reorganize source tree to use ``src/`` subdirectory.
+
+- Restructure code to reduce cyclomatic complexity.
+
+- Support Python 3.8.
+
+- Add "readme" command to display the top-level README.rst.
+
+- Update the list of known switches (now supporting through Subversion 1.13).
+
 Version 0.7.14
 ==============
 
