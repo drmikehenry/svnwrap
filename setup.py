@@ -49,9 +49,11 @@ setuptools.setup(
     py_modules=[NAME],
     python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
     install_requires=requirements,
-    extras_require={"dev": dev_requirements,},
+    extras_require={"dev": dev_requirements},
     entry_points={
-        "console_scripts": ["svnwrap = svnwrap:main_with_svn_error_handling"],
+        "console_scripts": [
+            "svnwrap = svnwrap:main_with_svn_error_handling"
+        ],
     },
     include_package_data=True,
     description="Wrapper script for Subversion command-line client",

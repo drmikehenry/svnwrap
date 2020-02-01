@@ -38,6 +38,7 @@ try:
 except ImportError:
     pass
 
+
 if sys.version_info < (3, 0):
     import ConfigParser as configparser
     from ConfigParser import SafeConfigParser as ConfigParser
@@ -1438,7 +1439,8 @@ For more details, see the README.rst file distributed with svnwrap.
 
 """.strip()
             % dict(
-                svnwrap_ini_path=get_svnwrap_ini_path(), version=__version__
+                svnwrap_ini_path=get_svnwrap_ini_path(),
+                version=__version__,
             )
         )
 
