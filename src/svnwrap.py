@@ -49,7 +49,7 @@ else:
     from configparser import ConfigParser
     import queue
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 platform_is_windows = platform.system() == "Windows"
 
@@ -1894,7 +1894,11 @@ def readme():
         print("Cannot access README (try installing via pip or setup.py)")
         return
     msg = email.message_from_string(meta)
-    desc = msg.get("Description", "No README found")
+    desc = msg.get("Description", "").strip()
+    if not desc and not msg.is_multipart():
+        desc = msg.get_payload().strip()
+    if not desc:
+        desc = "No README found"
     if "\n" in desc:
         first, rest = desc.split("\n", 1)
         desc = "\n".join([first, textwrap.dedent(rest)])

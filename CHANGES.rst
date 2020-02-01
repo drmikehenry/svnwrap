@@ -4,6 +4,14 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.8.1
+=============
+
+- Support new core metadata file format (version 2.1), which allows the
+  "long_description" (i.e., README.rst text) to be stored as the metadata "body"
+  instead of as the "Description" header).  This fixes ``svnwrap readme`` in
+  cases where the new metadata format is being used.
+
 Version 0.8.0
 =============
 
