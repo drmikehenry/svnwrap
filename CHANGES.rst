@@ -4,6 +4,14 @@ Changes
 
 Significant changes to svnwrap (newest changes first).
 
+Version 0.8.2
+=============
+
+- Support universal wheels.
+
+- Small changes: update copyright dates, tweak comment wording, ignore
+  ``__pycache__/`` directories.
+
 Version 0.8.1
 =============
 
