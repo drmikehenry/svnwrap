@@ -49,7 +49,7 @@ else:
     from configparser import ConfigParser
     import queue
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 platform_is_windows = platform.system() == "Windows"
 
