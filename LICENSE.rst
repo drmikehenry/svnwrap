@@ -1,4 +1,4 @@
-Copyright (c) 2016 Michael Henry
+Copyright (c) 2011-2020 Michael Henry
 
 Licensed under the terms of the MIT license (reproduced below).
 
